@@ -1,4 +1,5 @@
 import SwiftUI
+import MapKit
 import CoreLocation
 
 struct ManualTrackView: View {
@@ -8,13 +9,16 @@ struct ManualTrackView: View {
     @State private var path: [CLLocationCoordinate2D] = []
     @State private var showNameSheet = false
     @State private var trackName = ""
+    
+    @State private var mapRegion = MKCoordinateRegion(
+        center: CLLocationCoordinate2D(latitude: 55.7558, longitude: 37.6173),
+        span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+    )
 
     var body: some View {
         ZStack {
-            ManualTrackMapView(path: path) { newCoord in
-                path.append(newCoord)
-            }
-            .ignoresSafeArea()
+            TapMapView(path: $path, region: $mapRegion)
+                .ignoresSafeArea()
 
             VStack {
                 HStack {
@@ -31,49 +35,24 @@ struct ManualTrackView: View {
                 Spacer()
 
                 VStack(spacing: 12) {
-                    // Подсказка
-                    if path.isEmpty {
-                        Text("Нажимайте на карту, чтобы ставить точки трассы")
-                            .font(.subheadline)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(.black.opacity(0.6), in: Capsule())
-                    }
+                    Text("Тапайте по карте, чтобы добавить точки")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                        .padding(8)
+                        .background(.ultraThinMaterial, in: Capsule())
 
-                    HStack(spacing: 24) {
-                        stat("Дистанция", String(format: "%.0f м", calculateLength()))
-                        stat("Точек", "\(path.count)")
-                    }
-                    .padding(.vertical, 12).padding(.horizontal, 20)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-
-                    HStack(spacing: 12) {
-                        // Кнопка "Отменить"
-                        Button {
-                            if !path.isEmpty { path.removeLast() }
-                        } label: {
-                            Image(systemName: "arrow.uturn.backward")
-                                .font(.title3.weight(.bold))
-                                .frame(width: 56, height: 56)
-                                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-                        }
-                        .disabled(path.isEmpty)
-
-                        // Кнопка "Сохранить"
-                        Button {
-                            guard path.count >= 3 else { return }
+                    Button {
+                        if path.count > 2 {
                             trackName = "Трасса \(store.tracks.count + 1)"
                             showNameSheet = true
-                        } label: {
-                            Text("Сохранить")
-                                .font(.title3.weight(.bold))
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 56)
-                                .background(path.count >= 3 ? Color.blue : Color.gray.opacity(0.5), in: RoundedRectangle(cornerRadius: 16))
-                                .foregroundColor(.white)
                         }
-                        .disabled(path.count < 3)
+                    } label: {
+                        Text("Сохранить (\(path.count) точек)")
+                            .font(.title3.weight(.bold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(path.count > 2 ? Color.blue : Color.gray, in: RoundedRectangle(cornerRadius: 16))
+                            .foregroundColor(.white)
                     }
                 }
                 .padding()
@@ -88,50 +67,82 @@ struct ManualTrackView: View {
                             Button("Отмена") { showNameSheet = false }
                         }
                         ToolbarItem(placement: .confirmationAction) {
-                            Button("Сохранить") { saveTrack() }
-                                .disabled(trackName.trimmingCharacters(in: .whitespaces).isEmpty)
+                            Button("Сохранить") { save() }
+                                .disabled(trackName.isEmpty)
                         }
                     }
             }
         }
     }
 
-    private func calculateLength() -> Double {
-        guard path.count > 1 else { return 0 }
-        var dist: Double = 0
-        for i in 0..<(path.count - 1) {
-            let loc1 = CLLocation(latitude: path[i].latitude, longitude: path[i].longitude)
-            let loc2 = CLLocation(latitude: path[i+1].latitude, longitude: path[i+1].longitude)
-            dist += loc1.distance(from: loc2)
-        }
-        // Замыкаем круг (от последней точки до первой)
-        if path.count >= 3 {
-            let first = CLLocation(latitude: path[0].latitude, longitude: path[0].longitude)
-            let last = CLLocation(latitude: path.last!.latitude, longitude: path.last!.longitude)
-            dist += last.distance(from: first)
-        }
-        return dist
-    }
-
-    private func stat(_ label: String, _ value: String) -> some View {
-        VStack(spacing: 2) {
-            Text(value).font(.title3.weight(.semibold)).monospacedDigit()
-            Text(label).font(.caption).foregroundColor(.secondary)
-        }
-    }
-
-    private func saveTrack() {
-        guard let first = path.first else { return }
+    private func save() {
         let coords = path.map { CodableCoordinate($0) }
+        var length: Double = 0
+        for i in 1..<path.count {
+            let p1 = CLLocation(latitude: path[i-1].latitude, longitude: path[i-1].longitude)
+            let p2 = CLLocation(latitude: path[i].latitude, longitude: path[i].longitude)
+            length += p1.distance(from: p2)
+        }
         
         let track = Track(
-            name: trackName.trimmingCharacters(in: .whitespaces),
+            name: trackName,
             points: coords,
-            startPoint: CodableCoordinate(first),
-            lengthMeters: calculateLength()
+            startPoint: CodableCoordinate(path[0]),
+            lengthMeters: length
         )
         store.add(track)
         showNameSheet = false
         dismiss()
+    }
+}
+
+struct TapMapView: UIViewRepresentable {
+    @Binding var path: [CLLocationCoordinate2D]
+    @Binding var region: MKCoordinateRegion
+
+    func makeUIView(context: Context) -> MKMapView {
+        let map = MKMapView()
+        map.delegate = context.coordinator
+        map.overrideUserInterfaceStyle = .dark
+        
+        let gesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.didTap(_:)))
+        map.addGestureRecognizer(gesture)
+        return map
+    }
+
+    func updateUIView(_ map: MKMapView, context: Context) {
+        map.setRegion(region, animated: false)
+        map.removeOverlays(map.overlays)
+        if path.count > 1 {
+            map.addOverlay(MKPolyline(coordinates: path, count: path.count))
+        }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    class Coordinator: NSObject, MKMapViewDelegate {
+        var parent: TapMapView
+        init(_ parent: TapMapView) { self.parent = parent }
+
+        @objc func didTap(_ gesture: UITapGestureRecognizer) {
+            let mapView = gesture.view as! MKMapView
+            let touchPoint = gesture.location(in: mapView)
+            let coordinate = mapView.convert(touchPoint, toCoordinateFrom: mapView)
+            parent.path.append(coordinate)
+            mapView.removeOverlays(mapView.overlays)
+            if parent.path.count > 1 {
+                mapView.addOverlay(MKPolyline(coordinates: parent.path, count: parent.path.count))
+            }
+        }
+
+        func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+            if let poly = overlay as? MKPolyline {
+                let r = MKPolylineRenderer(polyline: poly)
+                r.strokeColor = UIColor.systemBlue
+                r.lineWidth = 5
+                return r
+            }
+            return MKOverlayRenderer(overlay: overlay)
+        }
     }
 }
