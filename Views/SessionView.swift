@@ -6,17 +6,56 @@ struct SessionView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var engine = LapTimerEngine()
     @State private var showSummary = false
+    @EnvironmentObject var themeManager: ThemeManager
 
     var body: some View {
         ZStack {
             RaceMapView(track: track).ignoresSafeArea()
+
             VStack(spacing: 0) {
-                topBar
+                // Верхняя панель (кнопки закрытия)
+                HStack {
+                    Button {
+                        engine.stop(); location.stop(); dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.title3.weight(.semibold))
+                            .padding(12)
+                            .background(.ultraThinMaterial, in: Circle())
+                            .foregroundColor(.white)
+                    }
+                    Spacer()
+                    Text(track.name)
+                        .font(.headline)
+                        .padding(.horizontal, 14).padding(.vertical, 8)
+                        .background(.ultraThinMaterial, in: Capsule())
+                        .foregroundColor(.white)
+                    Spacer()
+                    Button {
+                        engine.stop(); location.stop(); showSummary = true
+                    } label: {
+                        Image(systemName: "flag.checkered")
+                            .font(.title3.weight(.semibold))
+                            .padding(12)
+                            .background(.ultraThinMaterial, in: Circle())
+                            .foregroundColor(.white)
+                    }
+                }
+                .padding()
+                
                 Spacer()
-                HUDView(current: engine.currentLapTime, last: engine.lastLapTime,
-                        best: engine.bestLapTime, laps: engine.lapCount,
-                        speedKph: location.speedKph)
-                    .padding(.horizontal).padding(.bottom, 24)
+
+                // Панель данных (зависит от темы)
+                HUDView(
+                    current: engine.currentLapTime,
+                    last: engine.lastLapTime,
+                    best: engine.bestLapTime,
+                    laps: engine.lapCount,
+                    speedKph: location.speedKph,
+                    theme: themeManager.currentTheme
+                )
+                .padding(.horizontal, themeManager.currentTheme == .raceChrono ? 0 : 16)
+                .padding(.bottom, themeManager.currentTheme == .raceChrono ? 0 : 24)
             }
         }
         .onAppear { location.start(); engine.start(with: track) }
@@ -26,24 +65,6 @@ struct SessionView: View {
             engine.process(loc)
         }
         .sheet(isPresented: $showSummary) { summarySheet }
-    }
-
-    private var topBar: some View {
-        HStack {
-            Button { engine.stop(); location.stop(); showSummary = true } label: {
-                Image(systemName: "flag.checkered").font(.title3.weight(.semibold))
-                    .padding(12).background(.ultraThinMaterial, in: Circle())
-            }
-            Spacer()
-            Text(track.name).font(.headline)
-                .padding(.horizontal, 14).padding(.vertical, 8)
-                .background(.ultraThinMaterial, in: Capsule())
-            Spacer()
-            Button { engine.stop(); location.stop(); dismiss() } label: {
-                Image(systemName: "xmark").font(.title3.weight(.semibold))
-                    .padding(12).background(.ultraThinMaterial, in: Circle())
-            }
-        }.padding()
     }
 
     private var summarySheet: some View {
@@ -59,14 +80,8 @@ struct SessionView: View {
                 Text("Круги не зафиксированы").foregroundColor(.secondary)
             }
             Text("Всего кругов: \(engine.lapCount)").font(.headline)
-            List(engine.laps) { lap in
-                HStack {
-                    Text(Fmt.lap(lap.time)).monospacedDigit()
-                    Spacer()
-                    Text(lap.date, style: .time).foregroundColor(.secondary)
-                }
-            }.listStyle(.plain)
-            Button("Закрыть") { dismiss() }.buttonStyle(.borderedProminent).padding(.bottom)
+            Button("Закрыть") { dismiss() }
+                .buttonStyle(.borderedProminent).padding(.bottom)
         }.padding()
     }
 }
