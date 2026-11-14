@@ -8,10 +8,24 @@ struct RecordingMapView: UIViewRepresentable {
         let map = MKMapView()
         map.delegate = context.coordinator
         map.showsUserLocation = true
-        map.userTrackingMode = .follow
-        map.showsCompass = false
+        // Следим за пользователем, поворачивая камеру
+        map.userTrackingMode = .followWithHeading
+        map.showsCompass = true
         map.pointOfInterestFilter = .excludingAll
         map.overrideUserInterfaceStyle = .dark
+        
+        // Сразу приближаем карту
+        var region = MKCoordinateRegion()
+        region.span = MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
+        
+        // Если мы уже начали записывать, центрируемся по первой точке. Если нет — по текущей геопозиции.
+        if let first = path.first {
+            region.center = first
+        } else if let userLoc = map.userLocation.location?.coordinate {
+            region.center = userLoc
+        }
+        map.setRegion(region, animated: false)
+        
         return map
     }
 
@@ -33,7 +47,8 @@ struct RecordingMapView: UIViewRepresentable {
             if let poly = overlay as? MKPolyline {
                 let r = MKPolylineRenderer(polyline: poly)
                 r.strokeColor = UIColor.systemGreen
-                r.lineWidth = 5; r.lineCap = .round
+                r.lineWidth = 6
+                r.lineCap = .round
                 return r
             }
             return MKOverlayRenderer(overlay: overlay)
