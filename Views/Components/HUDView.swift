@@ -52,7 +52,7 @@ struct HUDView: View {
         .foregroundColor(.primary)
     }
 
-    // 2. RACECHRONO (Классика - Синий блок)
+    // 2. RACECHRONO (Классика - Черный блок)
     private var raceChronoTheme: some View {
         VStack(spacing: 0) {
             // Верхняя часть: время
@@ -73,18 +73,29 @@ struct HUDView: View {
             }
             .padding(.vertical, 20)
             .padding(.horizontal, 16)
-            .background(Color.blue)
+            .background(Color.black) // <-- Сделали черным
+
+            // Тонкая линия-разделитель, чтобы отделить верх от низа
+            Rectangle()
+                .fill(Color(white: 0.2))
+                .frame(height: 1)
 
             // Нижняя часть: инфа
             HStack {
                 smallChronoStat("Прошлый", last.map(Fmt.lap) ?? "-:--.---")
-                Divider().background(Color.gray)
+                
+                // Разделители
+                Rectangle().fill(Color(white: 0.3)).frame(width: 1, height: 20)
+                
                 smallChronoStat("Лучший", best.map(Fmt.lap) ?? "-:--.---")
-                Divider().background(Color.gray)
+                
+                // Разделители
+                Rectangle().fill(Color(white: 0.3)).frame(width: 1, height: 20)
+                
                 smallChronoStat("Кругов", "\(laps)")
             }
             .padding(.vertical, 12)
-            .background(Color.black)
+            .background(Color(white: 0.05)) // Темно-серый, почти черный
             .foregroundColor(.white)
         }
     }
