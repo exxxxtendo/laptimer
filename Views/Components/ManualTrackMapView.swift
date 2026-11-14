@@ -12,23 +12,12 @@ struct ManualTrackMapView: UIViewRepresentable {
         map.pointOfInterestFilter = .excludingAll
         map.overrideUserInterfaceStyle = .dark
         
-        // Добавляем жест "тап"
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
         map.addGestureRecognizer(tap)
-        
-        // Начальный вид (можно потом подвигать)
-        var region = MKCoordinateRegion()
-        region.span = MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
-        if let userLoc = map.userLocation.location?.coordinate {
-            region.center = userLoc
-        }
-        map.setRegion(region, animated: false)
-        
         return map
     }
 
     func updateUIView(_ map: MKMapView, context: Context) {
-        // Перерисовываем линию и маркеры только если количество точек изменилось
         guard context.coordinator.lastCount != path.count else { return }
         context.coordinator.lastCount = path.count
         
@@ -36,12 +25,9 @@ struct ManualTrackMapView: UIViewRepresentable {
         map.removeAnnotations(map.annotations.filter { !($0 is MKUserLocation) })
         
         guard path.count > 1 else { return }
-        
-        // Рисуем линию
         let poly = MKPolyline(coordinates: path, count: path.count)
         map.addOverlay(poly)
         
-        // Добавляем маркеры на каждую точку
         for coord in path {
             let pin = MKPointAnnotation()
             pin.coordinate = coord
@@ -54,16 +40,22 @@ struct ManualTrackMapView: UIViewRepresentable {
     final class Coordinator: NSObject, MKMapViewDelegate {
         var lastCount = 0
         let onTap: (CLLocationCoordinate2D) -> Void
+        var didZoom = false
         
-        init(onTap: @escaping (CLLocationCoordinate2D) -> Void) {
-            self.onTap = onTap
-        }
+        init(onTap: @escaping (CLLocationCoordinate2D) -> Void) { self.onTap = onTap }
         
         @objc func handleTap(_ gesture: UITapGestureRecognizer) {
             guard let mapView = gesture.view as? MKMapView else { return }
             let point = gesture.location(in: mapView)
             let coord = mapView.convert(point, toCoordinateFrom: mapView)
             onTap(coord)
+        }
+
+        func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
+            guard !didZoom, let location = userLocation.location else { return }
+            didZoom = true
+            let region = MKCoordinateRegion(center: location.coordinate, latitudinalMeters: 400, longitudinalMeters: 400)
+            mapView.setRegion(region, animated: true)
         }
 
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
