@@ -2,9 +2,10 @@ import SwiftUI
 
 struct TracksListView: View {
     @EnvironmentObject var store: TrackStore
-    @EnvironmentObject var themeManager: ThemeManager // Добавили менеджер тем
+    @EnvironmentObject var themeManager: ThemeManager
     @State private var showRecorder = false
     @State private var showSettings = false
+    @State private var showManualDrawer = false // Для ручного добавления
     @State private var activeTrack: Track?
 
     var body: some View {
@@ -26,6 +27,11 @@ struct TracksListView: View {
                 Button { showRecorder = true } label: {
                     Label("Записать новую трассу", systemImage: "record.circle")
                 }
+                
+                // Возвращаем кнопку ручного добавления!
+                Button { showManualDrawer = true } label: {
+                    Label("Нарисовать на карте", systemImage: "pencil.tip")
+                }
             }
         }
         .navigationTitle("Кольцо")
@@ -38,6 +44,9 @@ struct TracksListView: View {
         }
         .sheet(isPresented: $showRecorder) {
             RecordTrackView().environmentObject(store)
+        }
+        .sheet(isPresented: $showManualDrawer) {
+            ManualTrackView().environmentObject(store)
         }
         .sheet(isPresented: $showSettings) {
             SettingsView().environmentObject(themeManager)
