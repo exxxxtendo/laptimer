@@ -46,13 +46,24 @@ struct RecordTrackView: View {
                 }.padding()
             }
         }
-        .onChange(of: location.lastLocation) { loc in
+               .onChange(of: location.lastLocation) { loc in
             guard recording, let loc else { return }
-            let coord = loc.coordinate
+            
+            // Защита от "телепортации" GPS: игнорируем, если скачок слишком большой (например, больше 100 метров за раз)
             if let last = path.last {
-                let d = CLLocation(latitude: last.latitude, longitude: last.longitude).distance(from: loc)
-                if d >= 2 { length += d; path.append(coord) }
-            } else { path.append(coord) }
+                let lastLoc = CLLocation(latitude: last.latitude, longitude: last.longitude)
+                let d = lastLoc.distance(from: loc)
+                
+                // Если GPS скаканул более чем на 100 метров, игнорируем эту точку (глюк)
+                if d > 100 { return }
+                
+                if d >= 2 {
+                    length += d
+                    path.append(loc.coordinate)
+                }
+            } else {
+                path.append(loc.coordinate)
+            }
         }
         .sheet(isPresented: $showNameSheet) {
             NavigationView {
