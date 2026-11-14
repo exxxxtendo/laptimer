@@ -23,6 +23,18 @@ targets:
       - Views
     info:
       path: Info.plist
+      properties:
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+        LSRequiresIPhoneOS: true
+        MinimumOSVersion: "15.0"
+        UILaunchScreen: {}
+        UIRequiredDeviceCapabilities: [gps, arm64]
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIBackgroundModes: [location]
+        NSLocationWhenInUseUsageDescription: "Нужно для записи трека и подсчёта времени круга."
+        NSLocationAlwaysAndWhenInUseUsageDescription: "Нужно для подсчёта кругов при выключенном экране."
+        NSLocationAlwaysUsageDescription: "Нужно для подсчёта кругов при выключенном экране."
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.yourname.laptimer
