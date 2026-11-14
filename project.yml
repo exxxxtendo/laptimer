@@ -18,6 +18,8 @@ targets:
     platform: iOS
     sources:
       - LapTimerApp.swift
+      - ThemeManager.swift
+      - SettingsView.swift
       - Models
       - Services
       - Views
