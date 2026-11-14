@@ -1,0 +1,28 @@
+workflows:
+  ios-unsigned:
+    name: Build unsigned IPA for TrollStore
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    environment:
+      xcode: latest
+    triggering:
+      events: [push]
+    scripts:
+      - name: Install XcodeGen
+        script: brew install xcodegen
+      - name: Generate Xcode project
+        script: xcodegen generate
+      - name: Build unsigned IPA
+        script: |
+          xcodebuild -project LapTimer.xcodeproj -scheme LapTimer \
+            -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/LapTimer.app Payload/
+          zip -qr LapTimer.ipa Payload
+      - name: Verify IPA
+        script: |
+          ls -lh LapTimer.ipa
+          unzip -l LapTimer.ipa | grep "Payload/LapTimer.app/LapTimer"
+    artifacts:
+      - LapTimer.ipa
