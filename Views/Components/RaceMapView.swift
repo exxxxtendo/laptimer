@@ -12,28 +12,16 @@ struct RaceMapView: UIViewRepresentable {
         map.showsCompass = true
         map.pointOfInterestFilter = .excludingAll
         map.overrideUserInterfaceStyle = .dark
-        
         return map
     }
 
     func updateUIView(_ map: MKMapView, context: Context) {
         if context.coordinator.lastTrackID != track?.id {
             map.removeOverlays(map.overlays)
-            
             if let points = track?.points, points.count > 1 {
                 let coords = points.map { $0.coordinate }
                 let line = MKPolyline(coordinates: coords, count: coords.count)
                 map.addOverlay(line)
-                
-                // Как только трасса загрузилась, мы плавно показываем её целиком
-                // (только один раз при открытии, без сброса в Москву)
-                if context.coordinator.lastTrackID == nil {
-                    map.setVisibleMapRect(
-                        line.boundingMapRect,
-                        edgePadding: UIEdgeInsets(top: 50, left: 50, bottom: 250, right: 50),
-                        animated: false
-                    )
-                }
             }
             context.coordinator.lastTrackID = track?.id
         }
@@ -43,13 +31,21 @@ struct RaceMapView: UIViewRepresentable {
 
     final class Coordinator: NSObject, MKMapViewDelegate {
         var lastTrackID: UUID?
+        var didZoom = false
+        
+        func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
+            guard !didZoom, let location = userLocation.location else { return }
+            didZoom = true
+            let region = MKCoordinateRegion(center: location.coordinate, latitudinalMeters: 400, longitudinalMeters: 400)
+            mapView.setRegion(region, animated: true)
+        }
+
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if let poly = overlay as? MKPolyline {
                 let r = MKPolylineRenderer(polyline: poly)
                 r.strokeColor = UIColor.systemBlue
                 r.lineWidth = 6
                 r.lineCap = .round
-                r.lineJoin = .round
                 return r
             }
             return MKOverlayRenderer(overlay: overlay)
