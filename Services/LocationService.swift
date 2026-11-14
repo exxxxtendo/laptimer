@@ -16,8 +16,6 @@ final class LocationService: NSObject, ObservableObject {
         manager.activityType = .automotiveNavigation
         manager.pausesLocationUpdatesAutomatically = false
         manager.distanceFilter = kCLDistanceFilterNone
-        manager.allowsBackgroundLocationUpdates = true
-        manager.showsBackgroundLocationIndicator = true
     }
 
     func requestPermission() {
@@ -28,6 +26,8 @@ final class LocationService: NSObject, ObservableObject {
 
     func start() {
         guard CLLocationManager.locationServicesEnabled() else { return }
+        manager.allowsBackgroundLocationUpdates = true
+        manager.showsBackgroundLocationIndicator = true
         manager.startUpdatingLocation()
         isUpdating = true
     }
