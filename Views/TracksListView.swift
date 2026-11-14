@@ -2,13 +2,13 @@ import SwiftUI
 
 struct TracksListView: View {
     @EnvironmentObject var store: TrackStore
+    @EnvironmentObject var themeManager: ThemeManager // Добавили менеджер тем
     @State private var showRecorder = false
-    @State private var showManualRecorder = false // <--- Новая переменная для ручной трассы
+    @State private var showSettings = false
     @State private var activeTrack: Track?
 
     var body: some View {
         List {
-            // ПЕРВАЯ СЕКЦИЯ (список трасс - оставляем как есть)
             Section {
                 ForEach(store.tracks) { track in
                     Button { activeTrack = track } label: {
@@ -22,24 +22,25 @@ struct TracksListView: View {
                 .onDelete { idx in idx.map { store.tracks[$0] }.forEach(store.delete) }
             } header: { Text("Трассы") }
 
-            // ВТОРАЯ СЕКЦИЯ (кнопки создания - вот тут изменения)
             Section {
                 Button { showRecorder = true } label: {
                     Label("Записать новую трассу", systemImage: "record.circle")
                 }
-                
-                Button { showManualRecorder = true } label: {
-                    Label("Нарисовать трассу вручную", systemImage: "hand.draw")
-                        .foregroundColor(.blue)
-                }
             }
         }
         .navigationTitle("Кольцо")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button { showSettings = true } label: {
+                    Image(systemName: "gearshape.fill")
+                }
+            }
+        }
         .sheet(isPresented: $showRecorder) {
             RecordTrackView().environmentObject(store)
         }
-        .sheet(isPresented: $showManualRecorder) {
-            ManualTrackView().environmentObject(store)
+        .sheet(isPresented: $showSettings) {
+            SettingsView().environmentObject(themeManager)
         }
         .fullScreenCover(item: $activeTrack) { track in
             SessionView(track: track)
