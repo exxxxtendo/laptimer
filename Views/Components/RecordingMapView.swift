@@ -8,23 +8,12 @@ struct RecordingMapView: UIViewRepresentable {
         let map = MKMapView()
         map.delegate = context.coordinator
         map.showsUserLocation = true
-        // Возвращаем тот самый удобный режим навигатора
-        map.userTrackingMode = .followWithHeading
+        map.userTrackingMode = .followWithHeading // Камера сама полетит к вам
         map.showsCompass = true
         map.pointOfInterestFilter = .excludingAll
         map.overrideUserInterfaceStyle = .dark
         
-        // Возвращаем нормальный зум
-        var region = MKCoordinateRegion()
-        region.span = MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
-        
-        if let first = path.first {
-            region.center = first
-        } else if let userLoc = map.userLocation.location?.coordinate {
-            region.center = userLoc
-        }
-        map.setRegion(region, animated: false)
-        
+        // Убрали принудительный setRegion, чтобы не прыгало в Москву
         return map
     }
 
