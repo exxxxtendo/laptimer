@@ -8,12 +8,10 @@ struct RecordingMapView: UIViewRepresentable {
         let map = MKMapView()
         map.delegate = context.coordinator
         map.showsUserLocation = true
-        map.userTrackingMode = .followWithHeading // Камера сама полетит к вам
+        map.userTrackingMode = .followWithHeading // Режим навигатора
         map.showsCompass = true
         map.pointOfInterestFilter = .excludingAll
         map.overrideUserInterfaceStyle = .dark
-        
-        // Убрали принудительный setRegion, чтобы не прыгало в Москву
         return map
     }
 
@@ -31,11 +29,20 @@ struct RecordingMapView: UIViewRepresentable {
     final class Coordinator: NSObject, MKMapViewDelegate {
         var lastCount = 0
         var polyline: MKPolyline?
+        var didZoom = false
+        
+        func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
+            guard !didZoom, let location = userLocation.location else { return }
+            didZoom = true
+            let region = MKCoordinateRegion(center: location.coordinate, latitudinalMeters: 400, longitudinalMeters: 400)
+            mapView.setRegion(region, animated: true)
+        }
+
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if let poly = overlay as? MKPolyline {
                 let r = MKPolylineRenderer(polyline: poly)
                 r.strokeColor = UIColor.systemGreen
-                r.lineWidth = 6
+                r.lineWidth = 5
                 r.lineCap = .round
                 return r
             }
