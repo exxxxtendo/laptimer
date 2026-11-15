@@ -2,54 +2,57 @@ import SwiftUI
 
 struct TracksListView: View {
     @EnvironmentObject var store: TrackStore
-    @EnvironmentObject var themeManager: ThemeManager
+    @Environment(\.dismiss) private var dismiss
     @State private var showRecorder = false
-    @State private var showSettings = false
-    @State private var showManualDrawer = false // Для ручного добавления
+    @State private var showManualRecorder = false
     @State private var activeTrack: Track?
 
     var body: some View {
-        List {
-            Section {
-                ForEach(store.tracks) { track in
-                    Button { activeTrack = track } label: {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(track.name).font(.headline)
-                            Text("\(String(format: "%.0f", track.lengthMeters)) м · \(track.points.count) точек")
-                                .font(.caption).foregroundColor(.secondary)
+        NavigationView {
+            ZStack {
+                Color.black.ignoresSafeArea() // Темный фон
+                
+                List {
+                    Section {
+                        ForEach(store.tracks) { track in
+                            Button { activeTrack = track; dismiss() } label: {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(track.name).font(.headline).foregroundColor(.white)
+                                    Text("\(String(format: "%.0f", track.lengthMeters)) м · \(track.points.count) точек")
+                                        .font(.caption).foregroundColor(.gray)
+                                }
+                            }
+                            .listRowBackground(Color(white: 0.1))
                         }
+                        .onDelete { idx in idx.map { store.tracks[$0] }.forEach(store.delete) }
+                    } header: { Text("Трассы").foregroundColor(.gray) }
+
+                    Section {
+                        Button { showRecorder = true } label: {
+                            Label("Записать новую трассу", systemImage: "record.circle")
+                                .foregroundColor(.white)
+                        }
+                        .listRowBackground(Color(white: 0.1))
+                        
+                        Button { showManualRecorder = true } label: {
+                            Label("Добавить вручную", systemImage: "hand.draw")
+                                .foregroundColor(.white)
+                        }
+                        .listRowBackground(Color(white: 0.1))
                     }
                 }
-                .onDelete { idx in idx.map { store.tracks[$0] }.forEach(store.delete) }
-            } header: { Text("Трассы") }
-
-            Section {
-                Button { showRecorder = true } label: {
-                    Label("Записать новую трассу", systemImage: "record.circle")
-                }
-                
-                // Возвращаем кнопку ручного добавления!
-                Button { showManualDrawer = true } label: {
-                    Label("Нарисовать на карте", systemImage: "pencil.tip")
-                }
+                .scrollContentBackground(.hidden) // Убирает белый фон списка (iOS 16+)
             }
-        }
-        .navigationTitle("Кольцо")
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button { showSettings = true } label: {
-                    Image(systemName: "gearshape.fill")
-                }
+            .navigationTitle("Гараж")
+            .toolbar {
+                Button("Закрыть") { dismiss() }.foregroundColor(.white)
             }
         }
         .sheet(isPresented: $showRecorder) {
             RecordTrackView().environmentObject(store)
         }
-        .sheet(isPresented: $showManualDrawer) {
+        .sheet(isPresented: $showManualRecorder) {
             ManualTrackView().environmentObject(store)
-        }
-        .sheet(isPresented: $showSettings) {
-            SettingsView().environmentObject(themeManager)
         }
         .fullScreenCover(item: $activeTrack) { track in
             SessionView(track: track)
