@@ -2,7 +2,7 @@ import SwiftUI
 import MapKit
 
 struct ManualTrackMapView: UIViewRepresentable {
-    let path: [CLLocationCoordinate2D]
+    @Binding var path: [CLLocationCoordinate2D]
     let onTap: (CLLocationCoordinate2D) -> Void
 
     func makeUIView(context: Context) -> MKMapView {
@@ -18,51 +18,67 @@ struct ManualTrackMapView: UIViewRepresentable {
     }
 
     func updateUIView(_ map: MKMapView, context: Context) {
-        guard context.coordinator.lastCount != path.count else { return }
-        context.coordinator.lastCount = path.count
-        
+        // Если точек нет или их слишком много (для запроса маршрута нужно ровно 2)
         map.removeOverlays(map.overlays)
         map.removeAnnotations(map.annotations.filter { !($0 is MKUserLocation) })
         
-        guard path.count > 1 else { return }
-        let poly = MKPolyline(coordinates: path, count: path.count)
-        map.addOverlay(poly)
-        
-        for coord in path {
+        // Ставим маркеры на все выбранные точки
+        for (index, coord) in path.enumerated() {
             let pin = MKPointAnnotation()
             pin.coordinate = coord
+            pin.title = index == 0 ? "Старт" : "Финиш"
             map.addAnnotation(pin)
+        }
+        
+        // Если есть ровно 2 точки, запрашиваем маршрут у Apple
+        if path.count == 2 {
+            context.coordinator.fetchRoute(from: path[0], to: path[1], on: map)
+        } else if path.count > 1 {
+            // Если точек больше 2 (на всякий случай), рисуем прямую
+            let poly = MKPolyline(coordinates: path, count: path.count)
+            map.addOverlay(poly)
         }
     }
 
-    func makeCoordinator() -> Coordinator { Coordinator(onTap: onTap) }
+    func makeCoordinator() -> Coordinator { Coordinator(parent: self) }
 
     final class Coordinator: NSObject, MKMapViewDelegate {
-        var lastCount = 0
-        let onTap: (CLLocationCoordinate2D) -> Void
-        var didZoom = false
+        var parent: ManualTrackMapView
+        var routePolyline: MKPolyline?
         
-        init(onTap: @escaping (CLLocationCoordinate2D) -> Void) { self.onTap = onTap }
+        init(parent: ManualTrackMapView) { self.parent = parent }
         
         @objc func handleTap(_ gesture: UITapGestureRecognizer) {
             guard let mapView = gesture.view as? MKMapView else { return }
             let point = gesture.location(in: mapView)
             let coord = mapView.convert(point, toCoordinateFrom: mapView)
-            onTap(coord)
+            parent.onTap(coord)
         }
 
-        func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
-            guard !didZoom, let location = userLocation.location else { return }
-            didZoom = true
-            let region = MKCoordinateRegion(center: location.coordinate, latitudinalMeters: 400, longitudinalMeters: 400)
-            mapView.setRegion(region, animated: true)
+        func fetchRoute(from source: CLLocationCoordinate2D, to destination: CLLocationCoordinate2D, on mapView: MKMapView) {
+            let request = MKDirections.Request()
+            request.source = MKMapItem(placemark: MKPlacemark(coordinate: source))
+            request.destination = MKMapItem(placemark: MKPlacemark(coordinate: destination))
+            request.transportType = .automobile // Ищем автомобильные дороги
+            
+            let directions = MKDirections(request: request)
+            directions.calculate { [weak self] response, error in
+                guard let self = self, let route = response?.routes.first else {
+                    print("Не удалось построить маршрут: \(error?.localizedDescription ?? "")")
+                    return
+                }
+                // Рисуем реальный маршрут
+                let polyline = route.polyline
+                mapView.addOverlay(polyline)
+                self.routePolyline = polyline
+            }
         }
 
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if let poly = overlay as? MKPolyline {
                 let r = MKPolylineRenderer(polyline: poly)
                 r.strokeColor = UIColor.systemBlue
-                r.lineWidth = 5
+                r.lineWidth = 6
                 r.lineCap = .round
                 r.lineJoin = .round
                 return r
@@ -74,7 +90,7 @@ struct ManualTrackMapView: UIViewRepresentable {
             guard !(annotation is MKUserLocation) else { return nil }
             let id = "pin"
             let view = mapView.dequeueReusableAnnotationView(withIdentifier: id) as? MKMarkerAnnotationView ?? MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: id)
-            view.markerTintColor = .systemBlue
+            view.markerTintColor = annotation.title == "Старт" ? .systemGreen : .systemRed
             view.animatesWhenAdded = true
             return view
         }
