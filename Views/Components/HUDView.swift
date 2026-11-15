@@ -8,6 +8,9 @@ struct HUDView: View {
     let laps: Int
     let speedKph: Double
 
+    // Цвет линий сетки
+    private let lineColor = Color(white: 0.3)
+
     var body: some View {
         VStack(spacing: 0) {
             // СКОРОСТЬ
@@ -23,40 +26,50 @@ struct HUDView: View {
             
             Spacer()
             
-            // НИЖНЯЯ ПАНЕЛЬ (Используем GeometryReader для ровных 50/50)
+            // НИЖНЯЯ ПАНЕЛЬ
             GeometryReader { geo in
                 let halfWidth = (geo.size.width / 2)
                 
                 VStack(spacing: 0) {
-                    // Верхняя линия панели
-                    Divider().background(Color(white: 0.3))
-                    
+                    // Верхний ряд
                     HStack(spacing: 0) {
                         // Ячейка Время
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("time").font(.system(size: 22, weight: .heavy, design: .rounded)).italic()
-                            Text(Fmt.lap(current)).font(.system(size: 38, weight: .black, design: .rounded)).lineLimit(1).minimumScaleFactor(0.5)
+                            Text("time")
+                                .font(.system(size: 22, weight: .heavy, design: .rounded))
+                                .italic()
+                            Text(Fmt.lap(current))
+                                .font(.system(size: 34, weight: .black, design: .rounded)) // Чуть уменьшили базовый размер
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.6)
                         }
                         .padding(.horizontal, 16)
-                        .frame(width: halfWidth, height: 75, alignment: .leading) // Жесткая высота
+                        .frame(width: halfWidth, height: 75, alignment: .leading)
                         .background(Color.black)
                         
-                        // Вертикальный разделитель
-                        Divider().background(Color(white: 0.3))
+                        // Вертикальная линия
+                        Rectangle().fill(lineColor).frame(width: 1)
                         
                         // Ячейка Дельта
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("delta").font(.system(size: 22, weight: .heavy, design: .rounded)).italic()
-                            Text(deltaString).font(.system(size: 38, weight: .black, design: .rounded)).foregroundColor(deltaColor).lineLimit(1).minimumScaleFactor(0.5)
+                            Text("delta")
+                                .font(.system(size: 22, weight: .heavy, design: .rounded))
+                                .italic()
+                            Text(deltaString)
+                                .font(.system(size: 34, weight: .black, design: .rounded)) // Сделали такой же размер, как у Time
+                                .foregroundColor(deltaColor)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.6)
                         }
                         .padding(.horizontal, 16)
                         .frame(width: halfWidth, height: 75, alignment: .leading)
                         .background(Color.black)
                     }
                     
-                    // Горизонтальный разделитель
-                    Divider().background(Color(white: 0.3))
+                    // Горизонтальная линия
+                    Rectangle().fill(lineColor).frame(height: 1)
                     
+                    // Нижний ряд
                     HStack(spacing: 0) {
                         // Ячейка Прошлый
                         Text("last: \(last.map(Fmt.lap) ?? "--")")
@@ -65,8 +78,8 @@ struct HUDView: View {
                             .frame(width: halfWidth, height: 44, alignment: .leading)
                             .background(Color.black)
                         
-                        // Вертикальный разделитель
-                        Divider().background(Color(white: 0.3))
+                        // Вертикальная линия
+                        Rectangle().fill(lineColor).frame(width: 1)
                         
                         // Ячейка Лучший
                         Text("best: \(best.map(Fmt.lap) ?? "--")")
@@ -76,12 +89,18 @@ struct HUDView: View {
                             .background(Color.black)
                     }
                 }
-                // Задаем общую высоту панели: 75 + 44 + 2 разделителя = ~121
-                .frame(height: 121)
+                // Жесткая высота: 75 + 75? Нет, 75 (верх) + 1 (линия) + 44 (низ) = 120
+                .frame(height: 120)
             }
-            .frame(height: 121) // Жесткий размер для GeometryReader
+            .frame(height: 120)
+            // Добавляем обводку вокруг всей панели, чтобы не было "прозрачных" краев
+            .overlay(
+                Rectangle()
+                    .stroke(lineColor, lineWidth: 1)
+            )
         }
         .foregroundColor(.white)
+        .background(Color.black) // Гарантируем черный фон для всего HUD
     }
     
     private var deltaString: String {
