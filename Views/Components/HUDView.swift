@@ -10,7 +10,7 @@ struct HUDView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // СКОРОСТЬ (слева сверху, без фона)
+            // СКОРОСТЬ (слева сверху)
             HStack {
                 Text(Fmt.speed(speedKph))
                     .font(.system(size: 90, weight: .black, design: .rounded))
@@ -18,57 +18,66 @@ struct HUDView: View {
                     .shadow(color: .black.opacity(0.5), radius: 5, x: 0, y: 2)
                     .padding(.leading, 20)
                     .padding(.top, 20)
-                
                 Spacer()
             }
             
             Spacer()
             
-            // НИЖНЯЯ ПАНЕЛЬ (черная, разделена пополам)
-            HStack(spacing: 0) {
-                // Левая половина (Время, Прошлый)
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("time")
-                        .font(.system(size: 24, weight: .black, design: .rounded))
-                        .italic()
-                        .foregroundColor(.white)
+            // НИЖНЯЯ СЕТКА 2x2 (Тонкие рамки, черный фон)
+            VStack(spacing: 1) { // 1 пиксель между строками
+                HStack(spacing: 1) { // 1 пиксель между колонками
+                    // Ячейка 1: Время
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("time")
+                            .font(.system(size: 22, weight: .heavy, design: .rounded))
+                            .italic()
+                            .foregroundColor(.white)
+                        Text(Fmt.lap(current))
+                            .font(.system(size: 40, weight: .black, design: .rounded))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                    }
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.black)
                     
-                    Text(Fmt.lap(current))
-                        .font(.system(size: 42, weight: .black, design: .rounded))
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5) // Защита от обрезания текста
-                    
-                    Text("last: \(last.map(Fmt.lap) ?? "--")")
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.8))
+                    // Ячейка 2: Дельта
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("delta")
+                            .font(.system(size: 22, weight: .heavy, design: .rounded))
+                            .italic()
+                            .foregroundColor(.white)
+                        Text(deltaString)
+                            .font(.system(size: 40, weight: .black, design: .rounded))
+                            .foregroundColor(deltaColor)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                    }
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .background(Color.black)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(20)
-                .background(Color.black) // Глухой черный
                 
-                // Правая половина (Дельта, Лучший)
-                VStack(alignment: .trailing, spacing: 6) {
-                    Text("delta")
-                        .font(.system(size: 24, weight: .black, design: .rounded))
-                        .italic()
+                HStack(spacing: 1) {
+                    // Ячейка 3: Прошлый
+                    Text("last: \(last.map(Fmt.lap) ?? "--")")
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
+                        .padding(10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.black)
                     
-                    Text(deltaString)
-                        .font(.system(size: 42, weight: .black, design: .rounded))
-                        .foregroundColor(deltaColor)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                    
+                    // Ячейка 4: Лучший
                     Text("best: \(best.map(Fmt.lap) ?? "--")")
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.8))
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                        .padding(10)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .background(Color.black)
                 }
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .padding(20)
-                .background(Color(white: 0.1)) // Чуть светлее для градиента
             }
-            .frame(height: 140)
+            .background(Color(white: 0.2)) // Цвет тонких линий сетки
         }
     }
     
