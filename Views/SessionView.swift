@@ -3,29 +3,47 @@ import SwiftUI
 struct SessionView: View {
     let track: Track
     @EnvironmentObject var location: LocationService
-    @EnvironmentObject var themeManager: ThemeManager // Читаем тему
+    @EnvironmentObject var recordsStore: RecordsStore
     @Environment(\.dismiss) private var dismiss
     @StateObject private var engine = LapTimerEngine()
     @State private var showSummary = false
+    @State private var showTracks = false
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottomTrailing) {
             RaceMapView(track: track).ignoresSafeArea()
 
             VStack(spacing: 0) {
                 topBar
                 Spacer()
-                // Передаем выбранную тему в HUD
+                
+                // Новый HUD
                 HUDView(
                     current: engine.currentLapTime,
                     last: engine.lastLapTime,
                     best: engine.bestLapTime,
+                    delta: engine.delta,
                     laps: engine.lapCount,
-                    speedKph: location.speedKph,
-                    theme: themeManager.currentTheme
+                    speedKph: location.speedKph
                 )
-                .padding(.horizontal).padding(.bottom, 24)
             }
+            
+            // Кнопка Плюс (Справа над панелью)
+            Button {
+                engine.stop()
+                location.stop()
+                showTracks = true
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 30, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(width: 60, height: 60)
+                    .background(Color.black)
+                    .clipShape(Circle())
+                    .shadow(radius: 10)
+            }
+            .padding(.trailing, 20)
+            .padding(.bottom, 160) // Подняли над панелью
         }
         .onAppear {
             location.start()
@@ -43,9 +61,17 @@ struct SessionView: View {
             if !isRunning && engine.lastLapTime != nil {
                 location.stop()
                 showSummary = true
+                
+                // Сохраняем рекорд, если это лучший круг
+                if let best = engine.bestLapTime {
+                    recordsStore.addRecord(trackName: track.name, time: best)
+                }
             }
         }
         .sheet(isPresented: $showSummary) { summarySheet }
+        .sheet(isPresented: $showTracks) {
+            TracksListView()
+        }
     }
 
     private var topBar: some View {
@@ -56,20 +82,6 @@ struct SessionView: View {
             Spacer()
             Text(track.name).font(.headline).padding(.horizontal, 14).padding(.vertical, 8).background(.ultraThinMaterial, in: Capsule())
             Spacer()
-            
-            // Кнопка настроек (переключение тем)
-            Menu {
-                ForEach(AppTheme.allCases) { theme in
-                    Button {
-                        themeManager.currentTheme = theme
-                    } label: {
-                        Label(theme.rawValue, systemImage: themeManager.currentTheme == theme ? "checkmark" : "")
-                    }
-                }
-            } label: {
-                Image(systemName: "gearshape.fill").font(.title3.weight(.semibold)).padding(12).background(.ultraThinMaterial, in: Circle())
-            }
-            
             Button { engine.stop(); location.stop(); dismiss() } label: {
                 Image(systemName: "xmark").font(.title3.weight(.semibold)).padding(12).background(.ultraThinMaterial, in: Circle())
             }
