@@ -26,22 +26,21 @@ struct SessionView: View {
                 )
             }
             
-            // Кнопка Плюс (Справа над панелью Delta)
+            // Плюсик над правой панелью (над дельтой)
             Button {
                 engine.stop()
                 location.stop()
                 showTracks = true
             } label: {
                 Image(systemName: "plus")
-                    .font(.system(size: 28, weight: .bold))
+                    .font(.system(size: 30, weight: .bold))
                     .foregroundColor(.white)
                     .frame(width: 60, height: 60)
                     .background(Color.black)
                     .clipShape(Circle())
-                    .shadow(radius: 10)
             }
             .padding(.trailing, 20)
-            .padding(.bottom, 160) // Поднимаем ровно над нижним блоком
+            .padding(.bottom, 160) // Чуть выше сетки
         }
         .onAppear {
             location.start()
@@ -70,34 +69,33 @@ struct SessionView: View {
 
     private var topBar: some View {
         HStack {
-            // Только крестик слева
+            // Кнопка закрытия
             Button { engine.stop(); location.stop(); dismiss() } label: {
                 Image(systemName: "xmark")
                     .font(.title3.weight(.bold))
-                    .padding(14)
-                    .background(Color.black.opacity(0.6))
+                    .padding(12)
+                    .background(Color.black.opacity(0.7))
                     .foregroundColor(.white)
                     .clipShape(Circle())
             }
             
             Spacer()
             
-            // Название трассы по центру
+            // Название
             Text(track.name)
                 .font(.headline)
                 .foregroundColor(.white)
                 .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                .background(Color.black.opacity(0.6))
+                .padding(.vertical, 10)
+                .background(Color.black.opacity(0.7))
                 .clipShape(Capsule())
             
             Spacer()
             
-            // Пустое место справа для симметрии (чтобы название было по центру)
-            Image(systemName: "xmark")
-                .font(.title3.weight(.bold))
-                .padding(14)
-                .opacity(0) // Скрыто, но занимает место
+            // Пустышка для симметрии
+            Circle()
+                .fill(Color.clear)
+                .frame(width: 44, height: 44)
         }
         .padding(.horizontal)
         .padding(.top, 10)
