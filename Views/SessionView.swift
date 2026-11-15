@@ -3,6 +3,7 @@ import SwiftUI
 struct SessionView: View {
     let track: Track
     @EnvironmentObject var location: LocationService
+    @EnvironmentObject var themeManager: ThemeManager // Читаем тему
     @Environment(\.dismiss) private var dismiss
     @StateObject private var engine = LapTimerEngine()
     @State private var showSummary = false
@@ -14,12 +15,14 @@ struct SessionView: View {
             VStack(spacing: 0) {
                 topBar
                 Spacer()
+                // Передаем выбранную тему в HUD
                 HUDView(
                     current: engine.currentLapTime,
                     last: engine.lastLapTime,
                     best: engine.bestLapTime,
                     laps: engine.lapCount,
-                    speedKph: location.speedKph
+                    speedKph: location.speedKph,
+                    theme: themeManager.currentTheme
                 )
                 .padding(.horizontal).padding(.bottom, 24)
             }
@@ -47,31 +50,28 @@ struct SessionView: View {
 
     private var topBar: some View {
         HStack {
-            Button {
-                engine.stop()
-                location.stop()
-                showSummary = true
-            } label: {
-                Image(systemName: "flag.checkered")
-                    .font(.title3.weight(.semibold))
-                    .padding(12)
-                    .background(.ultraThinMaterial, in: Circle())
+            Button { engine.stop(); location.stop(); showSummary = true } label: {
+                Image(systemName: "flag.checkered").font(.title3.weight(.semibold)).padding(12).background(.ultraThinMaterial, in: Circle())
             }
             Spacer()
-            Text(track.name)
-                .font(.headline)
-                .padding(.horizontal, 14).padding(.vertical, 8)
-                .background(.ultraThinMaterial, in: Capsule())
+            Text(track.name).font(.headline).padding(.horizontal, 14).padding(.vertical, 8).background(.ultraThinMaterial, in: Capsule())
             Spacer()
-            Button {
-                engine.stop()
-                location.stop()
-                dismiss()
+            
+            // Кнопка настроек (переключение тем)
+            Menu {
+                ForEach(AppTheme.allCases) { theme in
+                    Button {
+                        themeManager.currentTheme = theme
+                    } label: {
+                        Label(theme.rawValue, systemImage: themeManager.currentTheme == theme ? "checkmark" : "")
+                    }
+                }
             } label: {
-                Image(systemName: "xmark")
-                    .font(.title3.weight(.semibold))
-                    .padding(12)
-                    .background(.ultraThinMaterial, in: Circle())
+                Image(systemName: "gearshape.fill").font(.title3.weight(.semibold)).padding(12).background(.ultraThinMaterial, in: Circle())
+            }
+            
+            Button { engine.stop(); location.stop(); dismiss() } label: {
+                Image(systemName: "xmark").font(.title3.weight(.semibold)).padding(12).background(.ultraThinMaterial, in: Circle())
             }
         }
         .padding()
@@ -80,32 +80,23 @@ struct SessionView: View {
     private var summarySheet: some View {
         VStack(spacing: 16) {
             Text("Итоги сессии").font(.title2.weight(.bold))
-            
             if let best = engine.bestLapTime {
                 VStack(spacing: 4) {
                     Text("Результат").font(.caption).foregroundColor(.secondary)
-                    Text(Fmt.lap(best))
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
-                        .monospacedDigit()
+                    Text(Fmt.lap(best)).font(.system(size: 48, weight: .bold, design: .rounded)).monospacedDigit()
                 }
             } else {
                 Text("Время не зафиксировано").foregroundColor(.secondary)
             }
-            
             Text("Всего заездов: \(engine.lapCount)").font(.headline)
-            
             List(engine.laps) { lap in
                 HStack {
                     Text(Fmt.lap(lap.time)).monospacedDigit()
                     Spacer()
                     Text(lap.date, style: .time).foregroundColor(.secondary)
                 }
-            }
-            .listStyle(.plain)
-            
-            Button("Закрыть") { dismiss() }
-                .buttonStyle(.borderedProminent).padding(.bottom)
-        }
-        .padding()
+            }.listStyle(.plain)
+            Button("Закрыть") { dismiss() }.buttonStyle(.borderedProminent).padding(.bottom)
+        }.padding()
     }
 }
