@@ -23,53 +23,63 @@ struct HUDView: View {
             
             Spacer()
             
-            // СЕТКА (используем трюк с серым фоном для идеальных линий 1px)
-            VStack(spacing: 1) {
-                // Верхняя линия
-                Rectangle().fill(Color(white: 0.3)).frame(height: 1)
+            // НИЖНЯЯ ПАНЕЛЬ (Используем GeometryReader для ровных 50/50)
+            GeometryReader { geo in
+                let halfWidth = (geo.size.width / 2)
                 
-                // Верхний ряд
-                HStack(spacing: 1) {
-                    // Время
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("time").font(.system(size: 22, weight: .heavy, design: .rounded)).italic()
-                        Text(Fmt.lap(current)).font(.system(size: 36, weight: .black, design: .rounded)).lineLimit(1).minimumScaleFactor(0.5)
-                    }
-                    .padding(.horizontal, 16).padding(.vertical, 12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.black)
+                VStack(spacing: 0) {
+                    // Верхняя линия панели
+                    Divider().background(Color(white: 0.3))
                     
-                    // Дельта
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("delta").font(.system(size: 22, weight: .heavy, design: .rounded)).italic()
-                        Text(deltaString).font(.system(size: 36, weight: .black, design: .rounded)).foregroundColor(deltaColor).lineLimit(1).minimumScaleFactor(0.5)
+                    HStack(spacing: 0) {
+                        // Ячейка Время
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("time").font(.system(size: 22, weight: .heavy, design: .rounded)).italic()
+                            Text(Fmt.lap(current)).font(.system(size: 38, weight: .black, design: .rounded)).lineLimit(1).minimumScaleFactor(0.5)
+                        }
+                        .padding(.horizontal, 16)
+                        .frame(width: halfWidth, height: 75, alignment: .leading) // Жесткая высота
+                        .background(Color.black)
+                        
+                        // Вертикальный разделитель
+                        Divider().background(Color(white: 0.3))
+                        
+                        // Ячейка Дельта
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("delta").font(.system(size: 22, weight: .heavy, design: .rounded)).italic()
+                            Text(deltaString).font(.system(size: 38, weight: .black, design: .rounded)).foregroundColor(deltaColor).lineLimit(1).minimumScaleFactor(0.5)
+                        }
+                        .padding(.horizontal, 16)
+                        .frame(width: halfWidth, height: 75, alignment: .leading)
+                        .background(Color.black)
                     }
-                    .padding(.horizontal, 16).padding(.vertical, 12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.black)
-                }
-                
-                // Разделительная линия
-                Rectangle().fill(Color(white: 0.3)).frame(height: 1)
-                
-                // Нижний ряд
-                HStack(spacing: 1) {
-                    // Прошлый
-                    Text("last: \(last.map(Fmt.lap) ?? "--")")
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                        .padding(.horizontal, 16).padding(.vertical, 10)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.black)
                     
-                    // Лучший
-                    Text("best: \(best.map(Fmt.lap) ?? "--")")
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                        .padding(.horizontal, 16).padding(.vertical, 10)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.black)
+                    // Горизонтальный разделитель
+                    Divider().background(Color(white: 0.3))
+                    
+                    HStack(spacing: 0) {
+                        // Ячейка Прошлый
+                        Text("last: \(last.map(Fmt.lap) ?? "--")")
+                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                            .padding(.horizontal, 16)
+                            .frame(width: halfWidth, height: 44, alignment: .leading)
+                            .background(Color.black)
+                        
+                        // Вертикальный разделитель
+                        Divider().background(Color(white: 0.3))
+                        
+                        // Ячейка Лучший
+                        Text("best: \(best.map(Fmt.lap) ?? "--")")
+                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                            .padding(.horizontal, 16)
+                            .frame(width: halfWidth, height: 44, alignment: .leading)
+                            .background(Color.black)
+                    }
                 }
+                // Задаем общую высоту панели: 75 + 44 + 2 разделителя = ~121
+                .frame(height: 121)
             }
-            .background(Color(white: 0.3)) // Это создаст вертикальную линию между ячейками
+            .frame(height: 121) // Жесткий размер для GeometryReader
         }
         .foregroundColor(.white)
     }
