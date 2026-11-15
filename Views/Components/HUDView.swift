@@ -9,63 +9,50 @@ struct HUDView: View {
     let speedKph: Double
 
     var body: some View {
-        VStack {
-            // Верхняя часть: Скорость
+        VStack(spacing: 0) {
+            // СКОРОСТЬ (слева сверху, без фона)
             HStack {
-                VStack(alignment: .leading, spacing: -5) {
-                    Text("SPEED")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundColor(.gray)
-                    HStack(alignment: .lastTextBaseline, spacing: 2) {
-                        Text(Fmt.speed(speedKph))
-                            .font(.system(size: 60, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                        Text("km/h")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.gray)
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                Text(Fmt.speed(speedKph))
+                    .font(.system(size: 90, weight: .black, design: .rounded))
+                    .foregroundColor(.white)
+                    .shadow(color: .black.opacity(0.5), radius: 5, x: 0, y: 2)
+                    .padding(.leading, 20)
+                    .padding(.top, 20)
                 
                 Spacer()
             }
-            .padding(.leading, 20)
-            .padding(.top, 60) // Отступ от верхней панели (кнопок закрытия)
             
             Spacer()
             
-            // Нижняя панель (Time & Delta)
+            // НИЖНЯЯ ПАНЕЛЬ (черная, разделена пополам)
             HStack(spacing: 0) {
-                // Левая часть
-                VStack(alignment: .leading, spacing: 4) {
+                // Левая половина (Время, Прошлый)
+                VStack(alignment: .leading, spacing: 6) {
                     Text("time")
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                        .font(.system(size: 24, weight: .black, design: .rounded))
                         .italic()
-                        .foregroundColor(.gray)
+                        .foregroundColor(.white)
                     
-                    // Уменьшили шрифт и добавили minimumScaleFactor, чтобы не обрезалось
                     Text(Fmt.lap(current))
                         .font(.system(size: 42, weight: .black, design: .rounded))
                         .foregroundColor(.white)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.5)
+                        .minimumScaleFactor(0.5) // Защита от обрезания текста
                     
                     Text("last: \(last.map(Fmt.lap) ?? "--")")
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.6))
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                        .foregroundColor(.white.opacity(0.8))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(20)
-                .background(Color.black.opacity(0.9))
+                .background(Color.black) // Глухой черный
                 
-                // Правая часть
-                VStack(alignment: .trailing, spacing: 4) {
+                // Правая половина (Дельта, Лучший)
+                VStack(alignment: .trailing, spacing: 6) {
                     Text("delta")
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                        .font(.system(size: 24, weight: .black, design: .rounded))
                         .italic()
-                        .foregroundColor(.gray)
+                        .foregroundColor(.white)
                     
                     Text(deltaString)
                         .font(.system(size: 42, weight: .black, design: .rounded))
@@ -74,14 +61,14 @@ struct HUDView: View {
                         .minimumScaleFactor(0.5)
                     
                     Text("best: \(best.map(Fmt.lap) ?? "--")")
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.6))
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                        .foregroundColor(.white.opacity(0.8))
                 }
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .padding(20)
-                .background(Color(white: 0.1).opacity(0.95))
+                .background(Color(white: 0.1)) // Чуть светлее для градиента
             }
-            .frame(height: 130)
+            .frame(height: 140)
         }
     }
     
