@@ -11,7 +11,7 @@ struct RootView: View {
 
     var body: some View {
         ZStack {
-            // Глубокий бордовый градиент
+            // Градиент
             LinearGradient(colors: [Color(red: 0.25, green: 0.0, blue: 0.0), .black], startPoint: .top, endPoint: .bottom)
                 .ignoresSafeArea()
             
@@ -21,12 +21,11 @@ struct RootView: View {
                     .frame(height: 60)
                 Spacer()
                 
-                // Кнопки снизу
+                // Нижние кнопки
                 HStack(spacing: 30) {
                     MenuButton(title: "TRACKS", icon: "map.fill") {
                         showTracks = true
                     }
-                    
                     MenuButton(title: "RECORDS", icon: "trophy.fill") {
                         showRecords = true
                     }
@@ -34,7 +33,7 @@ struct RootView: View {
                 .padding(.bottom, 50)
             }
             
-            // Центральная кнопка с пчелой
+            // Кнопка по центру (без лишних кругов и рамок)
             Button {
                 if let lastTrack = store.tracks.last {
                     activeSession = lastTrack
@@ -46,13 +45,12 @@ struct RootView: View {
                     Circle()
                         .fill(Color.black)
                         .frame(width: 220, height: 220)
-                        .shadow(color: .black.opacity(0.8), radius: 20, x: 0, y: 10)
                     
+                    // Просто картинка, без обрезки кругом
                     Image("BeeLogo")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 140, height: 140)
-                        .clipShape(Circle())
                 }
             }
         }
@@ -83,22 +81,28 @@ struct MenuButton: View {
             .cornerRadius(16)
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color.red.opacity(0.6), lineWidth: 1.5)
+                    .stroke(Color(white: 0.2), lineWidth: 1) // Тонкая серая рамка
             )
         }
     }
 }
 
-// Идеально ровная шахматная полоса (квадраты строго 60x60)
+// Идеальная шахматная полоса на всю ширину экрана
 struct CheckeredStripe: View {
     var body: some View {
-        HStack(spacing: 0) {
-            ForEach(0..<20, id: \.self) { i in
-                Rectangle()
-                    .fill(i % 2 == 0 ? Color.white : Color.black)
-                    .frame(width: 60, height: 60)
+        GeometryReader { geo in
+            let squareSize = geo.size.height
+            let count = Int(geo.size.width / squareSize) + 2
+            
+            HStack(spacing: 0) {
+                ForEach(0..<count, id: \.self) { i in
+                    Rectangle()
+                        .fill(i % 2 == 0 ? Color.white : Color.black)
+                        .frame(width: squareSize, height: squareSize)
+                }
             }
+            .offset(x: -squareSize / 2) // Центрируем, чтобы не было обрезков
         }
-        .offset(x: -30) // Центрируем, чтобы не было обрезанных краев
+        .clipped()
     }
 }
