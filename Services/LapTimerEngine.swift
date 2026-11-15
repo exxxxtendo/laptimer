@@ -6,9 +6,9 @@ final class LapTimerEngine: ObservableObject {
     @Published var currentLapTime: TimeInterval = 0
     @Published var lastLapTime: TimeInterval?
     @Published var bestLapTime: TimeInterval?
+    @Published var delta: TimeInterval = 0 // НОВОЕ: разница с лучшим временем
     @Published var lapCount: Int = 0
     @Published var laps: [Lap] = []
-    @Published var delta: TimeInterval = 0
     
     private(set) var track: Track?
     private var lapStart: Date?
@@ -17,7 +17,7 @@ final class LapTimerEngine: ObservableObject {
     // Настройки срабатывания зон
     var startZoneRadius: Double = 30 // 30 метров от точки старта
     var finishZoneRadius: Double = 30 // 30 метров от точки финиша
-    var minSpeedForLap: Double = 2.0 // Минимальная скорость (м/с), чтобы не срабатывало при ходьбе пешком (2 м/с = 7.2 км/ч)
+    var minSpeedForLap: Double = 2.0 // Минимальная скорость (м/с)
     
     private var isInStartZone = false
     private var isInFinishZone = false
@@ -28,6 +28,7 @@ final class LapTimerEngine: ObservableObject {
         lapCount = 0
         lastLapTime = nil
         bestLapTime = nil
+        delta = 0 // Сбрасываем delta
         lapStart = nil
         currentLapTime = 0
         isInStartZone = false
@@ -46,6 +47,13 @@ final class LapTimerEngine: ObservableObject {
         timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self, let start = self.lapStart else { return }
             self.currentLapTime = Date().timeIntervalSince(start)
+            
+            // ЖИВОЙ РАСЧЕТ DELTA
+            if let best = self.bestLapTime {
+                self.delta = self.currentLapTime - best
+            } else {
+                self.delta = 0
+            }
         }
     }
 
@@ -54,7 +62,6 @@ final class LapTimerEngine: ObservableObject {
         
         // Берем координаты старта и финиша
         let startLocation = track.startPoint.clLocation
-        // Если точек в трассе нет (глюк), берем старт как финиш
         let finishLocation = track.points.last?.clLocation ?? startLocation
         
         let distanceToStart = location.distance(from: startLocation)
@@ -69,6 +76,7 @@ final class LapTimerEngine: ObservableObject {
             if lapStart == nil {
                 lapStart = Date()
                 currentLapTime = 0
+                delta = 0
             }
         }
         
