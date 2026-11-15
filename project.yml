@@ -3,29 +3,34 @@ options:
   bundleIdPrefix: com.yourname
   deploymentTarget:
     iOS: "15.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
 settings:
   base:
     SWIFT_VERSION: "5.5"
     CODE_SIGNING_ALLOWED: "NO"
     CODE_SIGNING_REQUIRED: "NO"
     CODE_SIGN_IDENTITY: ""
+    ENABLE_BITCODE: "NO"
     TARGETED_DEVICE_FAMILY: "1"
     GENERATE_INFOPLIST_FILE: "NO"
     IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+    SUPPORTS_MACCATALYST: "NO"
+    SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: "NO"
 targets:
   LapTimer:
     type: application
     platform: iOS
     sources:
       - LapTimerApp.swift
-      - ThemeManager.swift
-      - SettingsView.swift
       - Models
       - Services
       - Views
+      - Assets.xcassets
     info:
       path: Info.plist
       properties:
+        CFBundleDisplayName: GucciRacing
         CFBundleShortVersionString: "1.0"
         CFBundleVersion: "1"
         LSRequiresIPhoneOS: true
@@ -41,3 +46,5 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.yourname.laptimer
         PRODUCT_NAME: LapTimer
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
