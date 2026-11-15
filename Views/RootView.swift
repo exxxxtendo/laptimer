@@ -41,7 +41,7 @@ struct RootView: View {
                 .padding(.bottom, 50)
             }
             
-            // Кнопка по центру
+            // Кнопка по центру (только картинка, без лишних кругов)
             Button {
                 if let lastTrack = store.tracks.last {
                     activeSession = lastTrack
@@ -49,17 +49,11 @@ struct RootView: View {
                     showTracks = true
                 }
             } label: {
-                ZStack {
-                    Circle()
-                        .fill(Color.black)
-                        .frame(width: 220, height: 220)
-                    
-                    Image("BeeLogo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 140, height: 140)
-                        .clipShape(Circle())
-                }
+                Image("BeeLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 220, height: 220)
+                    .clipShape(Circle()) // Оставляем обрезку, чтобы углы картинки были круглыми
             }
         }
         .onAppear { location.requestPermission() }
