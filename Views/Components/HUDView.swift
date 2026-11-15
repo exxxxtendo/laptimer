@@ -6,76 +6,105 @@ struct HUDView: View {
     let best: TimeInterval?
     let laps: Int
     let speedKph: Double
+    let theme: AppTheme // Добавили параметр темы
 
     var body: some View {
-        VStack(spacing: 16) {
-            // Верхняя часть: Время и Скорость
+        switch theme {
+        case .raceChrono:
+            raceChronoView
+        case .standard:
+            standardView
+        case .modern:
+            modernView
+        }
+    }
+    
+    // 1. СТИЛЬ RACECHRONO (Минимализм, много данных)
+    private var raceChronoView: some View {
+        VStack(spacing: 8) {
             HStack(alignment: .bottom) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("ТЕКУЩИЙ КРУГ")
-                        .font(.system(size: 12, weight: .black, design: .rounded))
-                        .foregroundColor(.gray)
-                    Text(Fmt.lap(current))
-                        .font(.system(size: 58, weight: .heavy, design: .monospaced))
-                        .foregroundColor(.white)
-                        .shadow(color: .blue.opacity(0.8), radius: 10, x: 0, y: 0) // Неоновое свечение
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
+                VStack(alignment: .leading) {
+                    Text("TIME").font(.system(size: 10, weight: .bold)).foregroundColor(.gray)
+                    Text(Fmt.lap(current)).font(.system(size: 46, weight: .bold, design: .monospaced))
                 }
-                
                 Spacer()
-                
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text("СКОРОСТЬ")
-                        .font(.system(size: 12, weight: .black, design: .rounded))
-                        .foregroundColor(.gray)
-                    HStack(alignment: .lastTextBaseline, spacing: 2) {
-                        Text(Fmt.speed(speedKph))
-                            .font(.system(size: 58, weight: .heavy, design: .monospaced))
-                            .foregroundColor(.white)
-                        Text("км/ч")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.gray)
-                    }
+                VStack(alignment: .trailing) {
+                    Text("SPEED").font(.system(size: 10, weight: .bold)).foregroundColor(.gray)
+                    Text(Fmt.speed(speedKph)).font(.system(size: 46, weight: .bold, design: .monospaced))
                 }
             }
-            
-            // Разделитель
-            Rectangle()
-                .fill(LinearGradient(colors: [.clear, .gray.opacity(0.5), .clear], startPoint: .leading, endPoint: .trailing))
-                .frame(height: 1)
-            
-            // Нижняя часть: Лучший, Прошлый, Круги
             HStack {
-                metric(title: "ЛУЧШИЙ", value: best.map(Fmt.lap) ?? "--:--.---", color: .green)
+                Text("LAST: \(last.map(Fmt.lap) ?? "--")").font(.system(size: 14, design: .monospaced))
                 Spacer()
-                metric(title: "ПРОШЛЫЙ", value: last.map(Fmt.lap) ?? "--:--.---", color: .orange)
+                Text("BEST: \(best.map(Fmt.lap) ?? "--")").font(.system(size: 14, design: .monospaced)).foregroundColor(.green)
                 Spacer()
-                metric(title: "КРУГОВ", value: "\(laps)", color: .white)
+                Text("LAPS: \(laps)").font(.system(size: 14, design: .monospaced))
+            }
+        }
+        .padding(16)
+        .background(Color.black.opacity(0.8), in: RoundedRectangle(cornerRadius: 8))
+    }
+    
+    // 2. ОБЫЧНЫЙ СТИЛЬ (Стекло iOS)
+    private var standardView: some View {
+        VStack(spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Круг \(laps + 1)").font(.caption).foregroundColor(.secondary)
+                    Text(Fmt.lap(current)).font(.system(size: 56, weight: .bold, design: .rounded)).monospacedDigit()
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("км/ч").font(.caption).foregroundColor(.secondary)
+                    Text(Fmt.speed(speedKph)).font(.system(size: 56, weight: .bold, design: .rounded)).monospacedDigit()
+                }
+            }
+            Divider()
+            HStack {
+                metric("Прошлый", last.map(Fmt.lap) ?? "--:--.---", .primary)
+                Spacer()
+                metric("Лучший", best.map(Fmt.lap) ?? "--:--.---", .green)
+                Spacer()
+                metric("Кругов", "\(laps)", .primary)
+            }
+        }
+        .padding(20)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24))
+    }
+    
+    // 3. СОВРЕМЕННЫЙ СТИЛЬ (Неон, градиенты)
+    private var modernView: some View {
+        VStack(spacing: 16) {
+            HStack(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("ТЕКУЩИЙ КРУГ").font(.system(size: 12, weight: .black)).foregroundColor(.gray)
+                    Text(Fmt.lap(current))
+                        .font(.system(size: 58, weight: .heavy, design: .monospaced))
+                        .shadow(color: .blue.opacity(0.8), radius: 10)
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("СКОРОСТЬ").font(.system(size: 12, weight: .black)).foregroundColor(.gray)
+                    Text(Fmt.speed(speedKph)).font(.system(size: 58, weight: .heavy, design: .monospaced))
+                }
+            }
+            Rectangle().fill(LinearGradient(colors: [.clear, .gray.opacity(0.5), .clear], startPoint: .leading, endPoint: .trailing)).frame(height: 1)
+            HStack {
+                metric("ЛУЧШИЙ", best.map(Fmt.lap) ?? "--:--.---", .green)
+                Spacer()
+                metric("ПРОШЛЫЙ", last.map(Fmt.lap) ?? "--:--.---", .orange)
+                Spacer()
+                metric("КРУГОВ", "\(laps)", .white)
             }
         }
         .padding(24)
-        // Карбоновый фон с обводкой
-        .background(
-            ZStack {
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(Color(red: 0.08, green: 0.08, blue: 0.1)) // Почти черный
-                RoundedRectangle(cornerRadius: 24)
-                    .stroke(LinearGradient(colors: [.gray.opacity(0.3), .clear], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
-            }
-        )
-        .shadow(color: .black.opacity(0.5), radius: 10, x: 0, y: 5)
+        .background(RoundedRectangle(cornerRadius: 24).fill(Color(red: 0.08, green: 0.08, blue: 0.1)))
     }
 
-    private func metric(title: String, value: String, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.system(size: 11, weight: .bold, design: .rounded))
-                .foregroundColor(.gray)
-            Text(value)
-                .font(.system(size: 20, weight: .bold, design: .monospaced))
-                .foregroundColor(color)
-                .shadow(color: color.opacity(0.4), radius: 5, x: 0, y: 0)
+    private func metric(_ label: String, _ value: String, _ color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).font(.caption).foregroundColor(.secondary)
+            Text(value).font(.headline).monospacedDigit().foregroundColor(color)
         }
     }
 }
