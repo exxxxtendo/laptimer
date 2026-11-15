@@ -15,38 +15,52 @@ struct RootView: View {
             LinearGradient(colors: [Color(red: 0.25, green: 0.0, blue: 0.0), .black], startPoint: .top, endPoint: .bottom)
                 .ignoresSafeArea()
             
+            // ШАХМАТНАЯ ПОЛОСА (Идет идеально по центру экрана)
             VStack {
                 Spacer()
-                
-                // Шахматная полоса (строго 40x40 пикселей, много квадратов)
                 HStack(spacing: 0) {
-                    ForEach(0..<20, id: \.self) { i in
+                    // Генерируем 15 квадратов по 40px
+                    ForEach(0..<15, id: \.self) { i in
                         Rectangle()
                             .fill(i % 2 == 0 ? Color.white : Color.black)
                             .frame(width: 40, height: 40)
                     }
                 }
-                .offset(x: -20) // Центрируем полосу
+                Spacer()
+            }
+            
+            // КНОПКИ И ПЧЕЛА (Поверх полосы)
+            VStack {
+                Spacer()
+                
+                // Пчела
+                Button {
+                    if let lastTrack = store.tracks.last { activeSession = lastTrack } else { showTracks = true }
+                } label: {
+                    ZStack {
+                        // Если ты хочешь убрать черный фон, тебе нужно загрузить картинку без него
+                        // Пока что мы оставляем черный круг, как на твоем первом референсе
+                        Circle()
+                            .fill(Color.black)
+                            .frame(width: 220, height: 220)
+                            .shadow(color: .black.opacity(0.8), radius: 20, x: 0, y: 10)
+                        
+                        Image("BeeLogo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 140, height: 140)
+                            .clipShape(Circle())
+                    }
+                }
                 
                 Spacer()
                 
+                // Кнопки снизу
                 HStack(spacing: 30) {
                     MenuButton(title: "TRACKS", icon: "map.fill") { showTracks = true }
                     MenuButton(title: "RECORDS", icon: "trophy.fill") { showRecords = true }
                 }
                 .padding(.bottom, 50)
-            }
-            
-            // Кнопка по центру (чистая пчела, без черного круга)
-            Button {
-                if let lastTrack = store.tracks.last { activeSession = lastTrack } else { showTracks = true }
-            } label: {
-                Image("BeeLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 200, height: 200)
-                    .clipShape(Circle())
-                    .shadow(color: .black.opacity(0.8), radius: 20, x: 0, y: 10)
             }
         }
         .onAppear { location.requestPermission() }
