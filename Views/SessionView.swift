@@ -10,12 +10,33 @@ struct SessionView: View {
     @State private var showTracks = false
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
+        ZStack {
             RaceMapView(track: track).ignoresSafeArea()
 
             VStack(spacing: 0) {
                 topBar
+                
                 Spacer()
+                
+                // Кнопка Плюс теперь находится ровно над правой колонкой
+                HStack {
+                    Spacer()
+                    Button {
+                        engine.stop()
+                        location.stop()
+                        showTracks = true
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 30, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 60, height: 60)
+                            .background(Color.black)
+                            .clipShape(Circle())
+                    }
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 15) // Отступ от самой сетки
+                }
+                
                 HUDView(
                     current: engine.currentLapTime,
                     last: engine.lastLapTime,
@@ -25,22 +46,6 @@ struct SessionView: View {
                     speedKph: location.speedKph
                 )
             }
-            
-            // Плюсик над правой панелью (над дельтой)
-            Button {
-                engine.stop()
-                location.stop()
-                showTracks = true
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 30, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(width: 60, height: 60)
-                    .background(Color.black)
-                    .clipShape(Circle())
-            }
-            .padding(.trailing, 20)
-            .padding(.bottom, 160) // Чуть выше сетки
         }
         .onAppear {
             location.start()
@@ -69,7 +74,6 @@ struct SessionView: View {
 
     private var topBar: some View {
         HStack {
-            // Кнопка закрытия
             Button { engine.stop(); location.stop(); dismiss() } label: {
                 Image(systemName: "xmark")
                     .font(.title3.weight(.bold))
@@ -81,7 +85,6 @@ struct SessionView: View {
             
             Spacer()
             
-            // Название
             Text(track.name)
                 .font(.headline)
                 .foregroundColor(.white)
@@ -92,10 +95,7 @@ struct SessionView: View {
             
             Spacer()
             
-            // Пустышка для симметрии
-            Circle()
-                .fill(Color.clear)
-                .frame(width: 44, height: 44)
+            Circle().fill(Color.clear).frame(width: 44, height: 44) // Симметрия
         }
         .padding(.horizontal)
         .padding(.top, 10)
