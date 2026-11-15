@@ -8,11 +8,6 @@ struct HUDView: View {
     let laps: Int
     let speedKph: Double
 
-    // Берем половину ширины экрана минус 1 пиксель (для линии)
-    private var halfWidth: CGFloat {
-        (UIScreen.main.bounds.width - 1) / 2
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             // СКОРОСТЬ
@@ -28,55 +23,53 @@ struct HUDView: View {
             
             Spacer()
             
-            // НИЖНЯЯ СЕТКА (Жестко по 50% ширины)
-            VStack(spacing: 0) {
+            // СЕТКА (используем трюк с серым фоном для идеальных линий 1px)
+            VStack(spacing: 1) {
+                // Верхняя линия
+                Rectangle().fill(Color(white: 0.3)).frame(height: 1)
+                
                 // Верхний ряд
-                HStack(spacing: 0) {
-                    // Левая ячейка
+                HStack(spacing: 1) {
+                    // Время
                     VStack(alignment: .leading, spacing: 2) {
                         Text("time").font(.system(size: 22, weight: .heavy, design: .rounded)).italic()
                         Text(Fmt.lap(current)).font(.system(size: 36, weight: .black, design: .rounded)).lineLimit(1).minimumScaleFactor(0.5)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .frame(width: halfWidth, alignment: .leading)
+                    .padding(.horizontal, 16).padding(.vertical, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.black)
                     
-                    // Линия
-                    Rectangle().fill(Color(white: 0.3)).frame(width: 1)
-                    
-                    // Правая ячейка
+                    // Дельта
                     VStack(alignment: .leading, spacing: 2) {
                         Text("delta").font(.system(size: 22, weight: .heavy, design: .rounded)).italic()
                         Text(deltaString).font(.system(size: 36, weight: .black, design: .rounded)).foregroundColor(deltaColor).lineLimit(1).minimumScaleFactor(0.5)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .frame(width: halfWidth, alignment: .leading)
+                    .padding(.horizontal, 16).padding(.vertical, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.black)
                 }
                 
-                // Линия
+                // Разделительная линия
                 Rectangle().fill(Color(white: 0.3)).frame(height: 1)
                 
                 // Нижний ряд
-                HStack(spacing: 0) {
+                HStack(spacing: 1) {
+                    // Прошлый
                     Text("last: \(last.map(Fmt.lap) ?? "--")")
                         .font(.system(size: 18, weight: .bold, design: .rounded))
                         .padding(.horizontal, 16).padding(.vertical, 10)
-                        .frame(width: halfWidth, alignment: .leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color.black)
                     
-                    Rectangle().fill(Color(white: 0.3)).frame(width: 1)
-                    
+                    // Лучший
                     Text("best: \(best.map(Fmt.lap) ?? "--")")
                         .font(.system(size: 18, weight: .bold, design: .rounded))
                         .padding(.horizontal, 16).padding(.vertical, 10)
-                        .frame(width: halfWidth, alignment: .leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color.black)
                 }
             }
-            .overlay(Rectangle().fill(Color(white: 0.3)).frame(height: 1), alignment: .top) // Верхняя линия
+            .background(Color(white: 0.3)) // Это создаст вертикальную линию между ячейками
         }
         .foregroundColor(.white)
     }
