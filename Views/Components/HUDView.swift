@@ -26,7 +26,8 @@ struct HUDView: View {
                     // Левая часть (Time, Last)
                     VStack(alignment: .leading, spacing: 8) {
                         Text("time")
-                            .font(.system(size: 24, weight: .bold, design: .italic))
+                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            .italic() // <--- Исправлено тут
                             .foregroundColor(.white)
                         
                         Text(Fmt.lap(current))
@@ -46,7 +47,8 @@ struct HUDView: View {
                     // Правая часть (Delta, Best)
                     VStack(alignment: .trailing, spacing: 8) {
                         Text("delta")
-                            .font(.system(size: 24, weight: .bold, design: .italic))
+                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            .italic() // <--- Исправлено тут
                             .foregroundColor(.white)
                         
                         Text(deltaString)
