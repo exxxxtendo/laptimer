@@ -11,9 +11,11 @@ struct ManualTrackView: View {
 
     var body: some View {
         ZStack {
-            // Карта с функцией нажатия (тыкалка)
-            ManualTrackMapView(path: path) { newCoord in
-                path.append(newCoord)
+            ManualTrackMapView(path: $path) { newCoord in
+                // Разрешаем ставить только 2 точки
+                if path.count < 2 {
+                    path.append(newCoord)
+                }
             }
             .ignoresSafeArea()
 
@@ -32,9 +34,22 @@ struct ManualTrackView: View {
                 Spacer()
 
                 VStack(spacing: 12) {
-                    // Подсказка, если трасса еще пустая
                     if path.isEmpty {
-                        Text("Нажимайте на карту, чтобы ставить точки трассы")
+                        Text("Нажмите на карту, чтобы поставить точку СТАРТА")
+                            .font(.subheadline)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(.black.opacity(0.6), in: Capsule())
+                    } else if path.count == 1 {
+                        Text("Теперь нажмите на карту, чтобы поставить точку ФИНИША")
+                            .font(.subheadline)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(.black.opacity(0.6), in: Capsule())
+                    } else {
+                        Text("Маршрут построен по дорогам. Нажмите Сохранить.")
                             .font(.subheadline)
                             .foregroundColor(.white)
                             .padding(.horizontal, 16)
@@ -42,19 +57,9 @@ struct ManualTrackView: View {
                             .background(.black.opacity(0.6), in: Capsule())
                     }
 
-                    // Панель со статистикой
-                    HStack(spacing: 24) {
-                        stat("Дистанция", String(format: "%.0f м", calculateLength()))
-                        stat("Точек", "\(path.count)")
-                    }
-                    .padding(.vertical, 12).padding(.horizontal, 20)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-
-                    // Кнопки управления
                     HStack(spacing: 12) {
-                        // Кнопка "Отменить последнюю точку"
                         Button {
-                            if !path.isEmpty { path.removeLast() }
+                            path.removeAll() // Сбрасываем всё
                         } label: {
                             Image(systemName: "arrow.uturn.backward")
                                 .font(.title3.weight(.bold))
@@ -63,9 +68,7 @@ struct ManualTrackView: View {
                         }
                         .disabled(path.isEmpty)
 
-                        // Кнопка "Сохранить"
                         Button {
-                            guard path.count >= 3 else { return }
                             trackName = "Трасса \(store.tracks.count + 1)"
                             showNameSheet = true
                         } label: {
@@ -73,10 +76,10 @@ struct ManualTrackView: View {
                                 .font(.title3.weight(.bold))
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 56)
-                                .background(path.count >= 3 ? Color.blue : Color.gray.opacity(0.5), in: RoundedRectangle(cornerRadius: 16))
+                                .background(path.count == 2 ? Color.blue : Color.gray.opacity(0.5), in: RoundedRectangle(cornerRadius: 16))
                                 .foregroundColor(.white)
                         }
-                        .disabled(path.count < 3)
+                        .disabled(path.count != 2)
                     }
                 }
                 .padding()
@@ -99,41 +102,17 @@ struct ManualTrackView: View {
         }
     }
 
-    // Функция подсчета дистанции
-    private func calculateLength() -> Double {
-        guard path.count > 1 else { return 0 }
-        var dist: Double = 0
-        for i in 0..<(path.count - 1) {
-            let loc1 = CLLocation(latitude: path[i].latitude, longitude: path[i].longitude)
-            let loc2 = CLLocation(latitude: path[i+1].latitude, longitude: path[i+1].longitude)
-            dist += loc1.distance(from: loc2)
-        }
-        // Замыкаем круг (от последней точки к первой)
-        if path.count >= 3 {
-            let first = CLLocation(latitude: path[0].latitude, longitude: path[0].longitude)
-            let last = CLLocation(latitude: path.last!.latitude, longitude: path.last!.longitude)
-            dist += last.distance(from: first)
-        }
-        return dist
-    }
-
-    private func stat(_ label: String, _ value: String) -> some View {
-        VStack(spacing: 2) {
-            Text(value).font(.title3.weight(.semibold)).monospacedDigit()
-            Text(label).font(.caption).foregroundColor(.secondary)
-        }
-    }
-
-    // Функция сохранения трассы в базу
     private func saveTrack() {
-        guard let first = path.first else { return }
-        let coords = path.map { CodableCoordinate($0) }
+        guard let first = path.first, let last = path.last else { return }
         
+        // ВАЖНО: Мы сохраняем только 2 точки. 
+        // Линия маршрута по дорогам не сохраняется в файл, она запрашивается заново при заезде.
+        // Но для подсчета кругов нам нужен старт и финиш.
         let track = Track(
             name: trackName.trimmingCharacters(in: .whitespaces),
-            points: coords,
+            points: [CodableCoordinate(first), CodableCoordinate(last)],
             startPoint: CodableCoordinate(first),
-            lengthMeters: calculateLength()
+            lengthMeters: 0 // Длину по дорогам мы не считаем вручную, это сделает Apple при заезде
         )
         store.add(track)
         showNameSheet = false
