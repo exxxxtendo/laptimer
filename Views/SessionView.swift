@@ -10,14 +10,12 @@ struct SessionView: View {
     @State private var showTracks = false
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
+        ZStack {
             RaceMapView(track: track).ignoresSafeArea()
 
             VStack(spacing: 0) {
                 topBar
-                Spacer()
-                
-                // Новый HUD
+                // HUD теперь сам занимает нужное пространство
                 HUDView(
                     current: engine.currentLapTime,
                     last: engine.lastLapTime,
@@ -27,23 +25,6 @@ struct SessionView: View {
                     speedKph: location.speedKph
                 )
             }
-            
-            // Кнопка Плюс (Справа над панелью)
-            Button {
-                engine.stop()
-                location.stop()
-                showTracks = true
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 30, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(width: 60, height: 60)
-                    .background(Color.black)
-                    .clipShape(Circle())
-                    .shadow(radius: 10)
-            }
-            .padding(.trailing, 20)
-            .padding(.bottom, 160) // Подняли над панелью
         }
         .onAppear {
             location.start()
@@ -61,32 +42,55 @@ struct SessionView: View {
             if !isRunning && engine.lastLapTime != nil {
                 location.stop()
                 showSummary = true
-                
-                // Сохраняем рекорд, если это лучший круг
                 if let best = engine.bestLapTime {
                     recordsStore.addRecord(trackName: track.name, time: best)
                 }
             }
         }
         .sheet(isPresented: $showSummary) { summarySheet }
-        .sheet(isPresented: $showTracks) {
-            TracksListView()
-        }
+        .sheet(isPresented: $showTracks) { TracksListView() }
     }
 
     private var topBar: some View {
         HStack {
-            Button { engine.stop(); location.stop(); showSummary = true } label: {
-                Image(systemName: "flag.checkered").font(.title3.weight(.semibold)).padding(12).background(.ultraThinMaterial, in: Circle())
-            }
-            Spacer()
-            Text(track.name).font(.headline).padding(.horizontal, 14).padding(.vertical, 8).background(.ultraThinMaterial, in: Capsule())
-            Spacer()
+            // Кнопка закрытия (Крестик)
             Button { engine.stop(); location.stop(); dismiss() } label: {
-                Image(systemName: "xmark").font(.title3.weight(.semibold)).padding(12).background(.ultraThinMaterial, in: Circle())
+                Image(systemName: "xmark")
+                    .font(.title3.weight(.semibold))
+                    .padding(12)
+                    .background(.ultraThinMaterial, in: Circle())
+            }
+            
+            Spacer()
+            
+            // Название трассы по центру
+            Text(track.name)
+                .font(.headline)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(.ultraThinMaterial, in: Capsule())
+            
+            Spacer()
+            
+            // Кнопка плюс (выбор трасс) и Флаг (стоп)
+            HStack(spacing: 12) {
+                Button { engine.stop(); location.stop(); showTracks = true } label: {
+                    Image(systemName: "plus")
+                        .font(.title3.weight(.bold))
+                        .padding(12)
+                        .background(.ultraThinMaterial, in: Circle())
+                }
+                
+                Button { engine.stop(); location.stop(); showSummary = true } label: {
+                    Image(systemName: "flag.checkered")
+                        .font(.title3.weight(.semibold))
+                        .padding(12)
+                        .background(.ultraThinMaterial, in: Circle())
+                }
             }
         }
-        .padding()
+        .padding(.horizontal)
+        .padding(.top, 10)
     }
 
     private var summarySheet: some View {
