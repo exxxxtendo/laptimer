@@ -26,6 +26,7 @@ targets:
       - Models
       - Services
       - Views
+      - Assets.xcassets
     info:
       path: Info.plist
       properties:
