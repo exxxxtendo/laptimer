@@ -8,6 +8,7 @@ final class LapTimerEngine: ObservableObject {
     @Published var bestLapTime: TimeInterval?
     @Published var lapCount: Int = 0
     @Published var laps: [Lap] = []
+    @Published var delta: TimeInterval = 0
     
     private(set) var track: Track?
     private var lapStart: Date?
