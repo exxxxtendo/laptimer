@@ -6,82 +6,113 @@ struct SessionView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var engine = LapTimerEngine()
     @State private var showSummary = false
-    @EnvironmentObject var themeManager: ThemeManager
 
     var body: some View {
         ZStack {
+            // Карта заезда (следит за вами)
             RaceMapView(track: track).ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Верхняя панель (кнопки закрытия)
-                HStack {
-                    Button {
-                        engine.stop(); location.stop(); dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.title3.weight(.semibold))
-                            .padding(12)
-                            .background(.ultraThinMaterial, in: Circle())
-                            .foregroundColor(.white)
-                    }
-                    Spacer()
-                    Text(track.name)
-                        .font(.headline)
-                        .padding(.horizontal, 14).padding(.vertical, 8)
-                        .background(.ultraThinMaterial, in: Capsule())
-                        .foregroundColor(.white)
-                    Spacer()
-                    Button {
-                        engine.stop(); location.stop(); showSummary = true
-                    } label: {
-                        Image(systemName: "flag.checkered")
-                            .font(.title3.weight(.semibold))
-                            .padding(12)
-                            .background(.ultraThinMaterial, in: Circle())
-                            .foregroundColor(.white)
-                    }
-                }
-                .padding()
-                
+                topBar
                 Spacer()
-
-                // Панель данных (зависит от темы)
+                // Панель с таймером и спидометром
                 HUDView(
                     current: engine.currentLapTime,
                     last: engine.lastLapTime,
                     best: engine.bestLapTime,
                     laps: engine.lapCount,
-                    speedKph: location.speedKph,
-                    theme: themeManager.currentTheme
+                    speedKph: location.speedKph
                 )
-                .padding(.horizontal, themeManager.currentTheme == .raceChrono ? 0 : 16)
-                .padding(.bottom, themeManager.currentTheme == .raceChrono ? 0 : 24)
+                .padding(.horizontal).padding(.bottom, 24)
             }
         }
-        .onAppear { location.start(); engine.start(with: track) }
-        .onDisappear { engine.stop(); location.stop() }
+        .onAppear {
+            location.start()
+            engine.start(with: track)
+        }
+        .onDisappear {
+            engine.stop()
+            location.stop()
+        }
         .onChange(of: location.lastLocation) { loc in
-            guard let loc else { return }
+            guard let loc = loc else { return }
             engine.process(loc)
+        }
+        // МАГИЯ: Автоматически открываем итоги, когда таймер остановился сам (доехали до финиша)
+        .onChange(of: engine.isRunning) { isRunning in
+            if !isRunning && engine.lastLapTime != nil {
+                location.stop()
+                showSummary = true
+            }
         }
         .sheet(isPresented: $showSummary) { summarySheet }
     }
 
+    // Верхняя панель с кнопками
+    private var topBar: some View {
+        HStack {
+            Button {
+                // Ручная остановка, если нужно прервать заезд
+                engine.stop()
+                location.stop()
+                showSummary = true
+            } label: {
+                Image(systemName: "flag.checkered")
+                    .font(.title3.weight(.semibold))
+                    .padding(12)
+                    .background(.ultraThinMaterial, in: Circle())
+            }
+            Spacer()
+            Text(track.name)
+                .font(.headline)
+                .padding(.horizontal, 14).padding(.vertical, 8)
+                .background(.ultraThinMaterial, in: Capsule())
+            Spacer()
+            Button {
+                // Выход без сохранения результатов
+                engine.stop()
+                location.stop()
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.title3.weight(.semibold))
+                    .padding(12)
+                    .background(.ultraThinMaterial, in: Circle())
+            }
+        }
+        .padding()
+    }
+
+    // Окно с итогами заезда
     private var summarySheet: some View {
         VStack(spacing: 16) {
             Text("Итоги сессии").font(.title2.weight(.bold))
+            
             if let best = engine.bestLapTime {
                 VStack(spacing: 4) {
-                    Text("Лучший круг").font(.caption).foregroundColor(.secondary)
+                    Text("Результат").font(.caption).foregroundColor(.secondary)
                     Text(Fmt.lap(best))
-                        .font(.system(size: 48, weight: .bold, design: .rounded)).monospacedDigit()
+                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                        .monospacedDigit()
                 }
             } else {
-                Text("Круги не зафиксированы").foregroundColor(.secondary)
+                Text("Время не зафиксировано").foregroundColor(.secondary)
             }
-            Text("Всего кругов: \(engine.lapCount)").font(.headline)
+            
+            Text("Всего заездов: \(engine.lapCount)").font(.headline)
+            
+            List(engine.laps) { lap in
+                HStack {
+                    Text(Fmt.lap(lap.time)).monospacedDigit()
+                    Spacer()
+                    Text(lap.date, style: .time).foregroundColor(.secondary)
+                }
+            }
+            .listStyle(.plain)
+            
             Button("Закрыть") { dismiss() }
                 .buttonStyle(.borderedProminent).padding(.bottom)
-        }.padding()
+        }
+        .padding()
     }
 }
