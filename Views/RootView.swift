@@ -11,48 +11,21 @@ struct RootView: View {
 
     var body: some View {
         ZStack {
-            // Темно-красный градиентный фон
-            LinearGradient(colors: [Color(red: 0.2, green: 0.0, blue: 0.0), .black], startPoint: .top, endPoint: .bottom)
+            // Глубокий бордовый градиент (Gucci style)
+            LinearGradient(colors: [Color(red: 0.3, green: 0.0, blue: 0.0), Color(red: 0.1, green: 0.0, blue: 0.0), .black], startPoint: .top, endPoint: .bottom)
                 .ignoresSafeArea()
             
-            // Шахматная полоса
             VStack {
                 Spacer()
+                
+                // Шахматная полоса (по центру)
                 CheckeredStripe()
-                    .frame(height: 40)
-                Spacer()
-            }
-            
-            VStack {
-                Spacer()
-                
-                // Центральная кнопка с пчелой
-                Button {
-                    if let lastTrack = store.tracks.last {
-                        activeSession = lastTrack
-                    } else {
-                        showTracks = true
-                    }
-                } label: {
-                    ZStack {
-                        Circle()
-                            .fill(Color.black)
-                            .frame(width: 200, height: 200)
-                            .shadow(color: .black.opacity(0.8), radius: 20, x: 0, y: 10)
-                        
-                        // Если картинки нет, покажет иконку машины
-                        Image("BeeLogo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 140, height: 140)
-                            .clipShape(Circle())
-                    }
-                }
+                    .frame(height: 60)
                 
                 Spacer()
                 
-                // Нижние кнопки
-                HStack(spacing: 20) {
+                // Кнопки снизу
+                HStack(spacing: 30) {
                     MenuButton(title: "TRACKS", icon: "map.fill") {
                         showTracks = true
                     }
@@ -61,23 +34,43 @@ struct RootView: View {
                         showRecords = true
                     }
                 }
-                .padding(.bottom, 40)
+                .padding(.bottom, 50)
+            }
+            
+            // Центральная кнопка
+            Button {
+                if let lastTrack = store.tracks.last {
+                    activeSession = lastTrack
+                } else {
+                    showTracks = true
+                }
+            } label: {
+                ZStack {
+                    Circle()
+                        .fill(Color.black)
+                        .frame(width: 220, height: 220)
+                        .shadow(color: .black.opacity(0.9), radius: 25, x: 0, y: 10)
+                        .overlay(
+                            Circle().stroke(LinearGradient(colors: [.gray.opacity(0.5), .clear], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 2)
+                        )
+                    
+                    // Если картинки нет, покажет иконку машины
+                    Image("BeeLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 150, height: 150)
+                        .clipShape(Circle())
+                }
             }
         }
         .onAppear { location.requestPermission() }
-        .sheet(isPresented: $showTracks) {
-            TracksListView()
-        }
-        .sheet(isPresented: $showRecords) {
-            RecordsListView()
-        }
-        .fullScreenCover(item: $activeSession) { track in
-            SessionView(track: track)
-        }
+        .sheet(isPresented: $showTracks) { TracksListView() }
+        .sheet(isPresented: $showRecords) { RecordsListView() }
+        .fullScreenCover(item: $activeSession) { track in SessionView(track: track) }
     }
 }
 
-// Компонент кнопки меню
+// Кнопка меню
 struct MenuButton: View {
     let title: String
     let icon: String
@@ -85,35 +78,42 @@ struct MenuButton: View {
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 8) {
+            VStack(spacing: 12) {
                 Image(systemName: icon)
-                    .font(.title2)
+                    .font(.system(size: 28))
                 Text(title)
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .font(.system(size: 16, weight: .heavy, design: .rounded))
+                    .kerning(2)
             }
             .foregroundColor(.white)
-            .frame(width: 120, height: 60)
-            .background(Color.black.opacity(0.8))
-            .cornerRadius(12)
+            .frame(width: 140, height: 80)
+            .background(Color.black)
+            .cornerRadius(16)
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.red.opacity(0.5), lineWidth: 1.5)
             )
+            .shadow(color: .red.opacity(0.3), radius: 10, x: 0, y: 5)
         }
     }
 }
 
-// Компонент шахматной полосы
+// Идеально ровная шахматная полоса
 struct CheckeredStripe: View {
     var body: some View {
         GeometryReader { geo in
+            let squareSize = geo.size.height // Квадраты будут размером с высоту полосы
+            let count = Int(geo.size.width / squareSize) + 2
+            
             HStack(spacing: 0) {
-                ForEach(0..<Int(geo.size.width / 20), id: \.self) { i in
+                ForEach(0..<count, id: \.self) { i in
                     Rectangle()
                         .fill(i % 2 == 0 ? Color.white : Color.black)
-                        .frame(width: 20)
+                        .frame(width: squareSize)
                 }
             }
+            .frame(width: geo.size.width, alignment: .center)
+            .offset(x: -squareSize) // Центрируем
         }
     }
 }
