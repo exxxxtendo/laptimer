@@ -12,7 +12,8 @@ struct ManualTrackView: View {
 
     var body: some View {
         ZStack {
-            ManualTrackMapView(path: $path) { newCoord in
+            // Обратите внимание: здесь path без знака $
+            ManualTrackMapView(path: path) { newCoord in
                 if path.count < 2 {
                     path.append(newCoord)
                 }
