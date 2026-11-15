@@ -10,12 +10,12 @@ struct SessionView: View {
     @State private var showTracks = false
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottomTrailing) {
             RaceMapView(track: track).ignoresSafeArea()
 
             VStack(spacing: 0) {
                 topBar
-                // HUD теперь сам занимает нужное пространство
+                Spacer()
                 HUDView(
                     current: engine.currentLapTime,
                     last: engine.lastLapTime,
@@ -25,6 +25,23 @@ struct SessionView: View {
                     speedKph: location.speedKph
                 )
             }
+            
+            // Кнопка Плюс (Справа над панелью Delta)
+            Button {
+                engine.stop()
+                location.stop()
+                showTracks = true
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(width: 60, height: 60)
+                    .background(Color.black)
+                    .clipShape(Circle())
+                    .shadow(radius: 10)
+            }
+            .padding(.trailing, 20)
+            .padding(.bottom, 160) // Поднимаем ровно над нижним блоком
         }
         .onAppear {
             location.start()
@@ -53,12 +70,14 @@ struct SessionView: View {
 
     private var topBar: some View {
         HStack {
-            // Кнопка закрытия (Крестик)
+            // Только крестик слева
             Button { engine.stop(); location.stop(); dismiss() } label: {
                 Image(systemName: "xmark")
-                    .font(.title3.weight(.semibold))
-                    .padding(12)
-                    .background(.ultraThinMaterial, in: Circle())
+                    .font(.title3.weight(.bold))
+                    .padding(14)
+                    .background(Color.black.opacity(0.6))
+                    .foregroundColor(.white)
+                    .clipShape(Circle())
             }
             
             Spacer()
@@ -66,28 +85,19 @@ struct SessionView: View {
             // Название трассы по центру
             Text(track.name)
                 .font(.headline)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(.ultraThinMaterial, in: Capsule())
+                .foregroundColor(.white)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(Color.black.opacity(0.6))
+                .clipShape(Capsule())
             
             Spacer()
             
-            // Кнопка плюс (выбор трасс) и Флаг (стоп)
-            HStack(spacing: 12) {
-                Button { engine.stop(); location.stop(); showTracks = true } label: {
-                    Image(systemName: "plus")
-                        .font(.title3.weight(.bold))
-                        .padding(12)
-                        .background(.ultraThinMaterial, in: Circle())
-                }
-                
-                Button { engine.stop(); location.stop(); showSummary = true } label: {
-                    Image(systemName: "flag.checkered")
-                        .font(.title3.weight(.semibold))
-                        .padding(12)
-                        .background(.ultraThinMaterial, in: Circle())
-                }
-            }
+            // Пустое место справа для симметрии (чтобы название было по центру)
+            Image(systemName: "xmark")
+                .font(.title3.weight(.bold))
+                .padding(14)
+                .opacity(0) // Скрыто, но занимает место
         }
         .padding(.horizontal)
         .padding(.top, 10)
