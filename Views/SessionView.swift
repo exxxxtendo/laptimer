@@ -1,77 +1,121 @@
 import SwiftUI
 
-struct RootView: View {
+struct SessionView: View {
+    let track: Track
     @EnvironmentObject var location: LocationService
-    @EnvironmentObject var store: TrackStore
     @EnvironmentObject var recordsStore: RecordsStore
-    
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var engine = LapTimerEngine()
+    @State private var showSummary = false
     @State private var showTracks = false
-    @State private var showRecords = false
-    @State private var activeSession: Track?
 
     var body: some View {
-        ZStack {
-            // Градиент
-            LinearGradient(colors: [Color(red: 0.25, green: 0.0, blue: 0.0), .black], startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea()
-            
-            VStack {
+        ZStack(alignment: .bottomTrailing) {
+            RaceMapView(track: track).ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                topBar
                 Spacer()
-                
-                // Шахматная полоса (строго 40x40 пикселей, много квадратов)
-                HStack(spacing: 0) {
-                    ForEach(0..<20, id: \.self) { i in
-                        Rectangle()
-                            .fill(i % 2 == 0 ? Color.white : Color.black)
-                            .frame(width: 40, height: 40)
-                    }
-                }
-                .offset(x: -20) // Центрируем полосу
-                
-                Spacer()
-                
-                HStack(spacing: 30) {
-                    MenuButton(title: "TRACKS", icon: "map.fill") { showTracks = true }
-                    MenuButton(title: "RECORDS", icon: "trophy.fill") { showRecords = true }
-                }
-                .padding(.bottom, 50)
+                HUDView(
+                    current: engine.currentLapTime,
+                    last: engine.lastLapTime,
+                    best: engine.bestLapTime,
+                    delta: engine.delta,
+                    laps: engine.lapCount,
+                    speedKph: location.speedKph
+                )
             }
             
-            // Кнопка по центру (чистая пчела, без черного круга)
+            // Плюсик справа над панелью
             Button {
-                if let lastTrack = store.tracks.last { activeSession = lastTrack } else { showTracks = true }
+                engine.stop()
+                location.stop()
+                showTracks = true
             } label: {
-                Image("BeeLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 200, height: 200)
+                Image(systemName: "plus")
+                    .font(.system(size: 30, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(width: 60, height: 60)
+                    .background(Color.black)
                     .clipShape(Circle())
-                    .shadow(color: .black.opacity(0.8), radius: 20, x: 0, y: 10)
+            }
+            .padding(.trailing, 20)
+            .padding(.bottom, 145) // Подняли ровно над верхней границей HUD
+        }
+        .onAppear {
+            location.start()
+            engine.start(with: track)
+        }
+        .onDisappear {
+            engine.stop()
+            location.stop()
+        }
+        .onChange(of: location.lastLocation) { loc in
+            guard let loc = loc else { return }
+            engine.process(loc)
+        }
+        .onChange(of: engine.isRunning) { isRunning in
+            if !isRunning && engine.lastLapTime != nil {
+                location.stop()
+                showSummary = true
+                if let best = engine.bestLapTime {
+                    recordsStore.addRecord(trackName: track.name, time: best)
+                }
             }
         }
-        .onAppear { location.requestPermission() }
+        .sheet(isPresented: $showSummary) { summarySheet }
         .sheet(isPresented: $showTracks) { TracksListView() }
-        .sheet(isPresented: $showRecords) { RecordsListView() }
-        .fullScreenCover(item: $activeSession) { track in SessionView(track: track) }
     }
-}
 
-struct MenuButton: View {
-    let title: String
-    let icon: String
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 12) {
-                Image(systemName: icon).font(.system(size: 28))
-                Text(title).font(.system(size: 16, weight: .heavy, design: .rounded)).kerning(1)
+    private var topBar: some View {
+        HStack {
+            Button { engine.stop(); location.stop(); dismiss() } label: {
+                Image(systemName: "xmark")
+                    .font(.title3.weight(.bold))
+                    .padding(12)
+                    .background(Color.black.opacity(0.7))
+                    .foregroundColor(.white)
+                    .clipShape(Circle())
             }
-            .foregroundColor(.white)
-            .frame(width: 140, height: 80)
-            .background(Color.black)
-            .cornerRadius(16)
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(white: 0.3), lineWidth: 1))
+            
+            Spacer()
+            
+            Text(track.name)
+                .font(.headline)
+                .foregroundColor(.white)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .background(Color.black.opacity(0.7))
+                .clipShape(Capsule())
+            
+            Spacer()
+            
+            Circle().fill(Color.clear).frame(width: 44, height: 44) // Симметрия
         }
+        .padding(.horizontal)
+        .padding(.top, 10)
+    }
+
+    private var summarySheet: some View {
+        VStack(spacing: 16) {
+            Text("Итоги сессии").font(.title2.weight(.bold))
+            if let best = engine.bestLapTime {
+                VStack(spacing: 4) {
+                    Text("Результат").font(.caption).foregroundColor(.secondary)
+                    Text(Fmt.lap(best)).font(.system(size: 48, weight: .bold, design: .rounded)).monospacedDigit()
+                }
+            } else {
+                Text("Время не зафиксировано").foregroundColor(.secondary)
+            }
+            Text("Всего заездов: \(engine.lapCount)").font(.headline)
+            List(engine.laps) { lap in
+                HStack {
+                    Text(Fmt.lap(lap.time)).monospacedDigit()
+                    Spacer()
+                    Text(lap.date, style: .time).foregroundColor(.secondary)
+                }
+            }.listStyle(.plain)
+            Button("Закрыть") { dismiss() }.buttonStyle(.borderedProminent).padding(.bottom)
+        }.padding()
     }
 }
