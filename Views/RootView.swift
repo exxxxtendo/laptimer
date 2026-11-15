@@ -18,14 +18,9 @@ struct RootView: View {
             VStack {
                 Spacer()
                 
-                // Шахматная полоса (ровно на всю ширину экрана)
-                HStack(spacing: 0) {
-                    ForEach(0..<10, id: \.self) { i in
-                        Rectangle()
-                            .fill(i % 2 == 0 ? Color.white : Color.black)
-                    }
-                }
-                .frame(height: 60)
+                // Идеальная шахматная полоса
+                CheckeredStripe()
+                    .frame(height: 60)
                 
                 Spacer()
                 
@@ -41,7 +36,7 @@ struct RootView: View {
                 .padding(.bottom, 50)
             }
             
-            // Кнопка по центру (только картинка, без лишних кругов)
+            // Кнопка по центру (без черной подложки)
             Button {
                 if let lastTrack = store.tracks.last {
                     activeSession = lastTrack
@@ -53,7 +48,7 @@ struct RootView: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 220, height: 220)
-                    .clipShape(Circle()) // Оставляем обрезку, чтобы углы картинки были круглыми
+                    .clipShape(Circle()) // Делаем картинку круглой
             }
         }
         .onAppear { location.requestPermission() }
@@ -86,5 +81,26 @@ struct MenuButton: View {
                     .stroke(Color(white: 0.3), lineWidth: 1)
             )
         }
+    }
+}
+
+// Идеальная шахматная полоса (клетки всегда квадратные)
+struct CheckeredStripe: View {
+    var body: some View {
+        GeometryReader { geo in
+            let squareSize = geo.size.height // Размер клетки = высоте полосы
+            let count = Int(geo.size.width / squareSize) + 1 // Считаем, сколько клеток влезет
+            
+            HStack(spacing: 0) {
+                ForEach(0..<count, id: \.self) { i in
+                    Rectangle()
+                        .fill(i % 2 == 0 ? Color.white : Color.black)
+                        .frame(width: squareSize, height: squareSize)
+                }
+            }
+            .frame(width: geo.size.width, alignment: .center)
+            .offset(x: squareSize / 2) // Центрируем, чтобы края были ровные
+        }
+        .clipped() // Обрезаем всё, что вылезло за экран
     }
 }
