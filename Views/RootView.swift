@@ -17,38 +17,24 @@ struct RootView: View {
             
             VStack {
                 Spacer()
-                
-                // Идеальная шахматная полоса
                 CheckeredStripe()
-                    .frame(height: 60)
-                
+                    .frame(height: 40) // Высота полосы
                 Spacer()
                 
-                // Нижние кнопки
                 HStack(spacing: 30) {
-                    MenuButton(title: "TRACKS", icon: "map.fill") {
-                        showTracks = true
-                    }
-                    MenuButton(title: "RECORDS", icon: "trophy.fill") {
-                        showRecords = true
-                    }
+                    MenuButton(title: "TRACKS", icon: "map.fill") { showTracks = true }
+                    MenuButton(title: "RECORDS", icon: "trophy.fill") { showRecords = true }
                 }
                 .padding(.bottom, 50)
             }
             
-            // Кнопка по центру (без черной подложки)
             Button {
-                if let lastTrack = store.tracks.last {
-                    activeSession = lastTrack
-                } else {
-                    showTracks = true
-                }
+                if let lastTrack = store.tracks.last { activeSession = lastTrack } else { showTracks = true }
             } label: {
-                Image("BeeLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 220, height: 220)
-                    .clipShape(Circle()) // Делаем картинку круглой
+                ZStack {
+                    Circle().fill(Color.black).frame(width: 220, height: 220)
+                    Image("BeeLogo").resizable().scaledToFit().frame(width: 140, height: 140).clipShape(Circle())
+                }
             }
         }
         .onAppear { location.requestPermission() }
@@ -66,30 +52,24 @@ struct MenuButton: View {
     var body: some View {
         Button(action: action) {
             VStack(spacing: 12) {
-                Image(systemName: icon)
-                    .font(.system(size: 28))
-                Text(title)
-                    .font(.system(size: 16, weight: .heavy, design: .rounded))
-                    .kerning(1)
+                Image(systemName: icon).font(.system(size: 28))
+                Text(title).font(.system(size: 16, weight: .heavy, design: .rounded)).kerning(1)
             }
             .foregroundColor(.white)
             .frame(width: 140, height: 80)
             .background(Color.black)
             .cornerRadius(16)
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color(white: 0.3), lineWidth: 1)
-            )
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(white: 0.3), lineWidth: 1))
         }
     }
 }
 
-// Идеальная шахматная полоса (клетки всегда квадратные)
+// Идеальная мелкая шахматная полоса
 struct CheckeredStripe: View {
     var body: some View {
         GeometryReader { geo in
-            let squareSize = geo.size.height // Размер клетки = высоте полосы
-            let count = Int(geo.size.width / squareSize) + 1 // Считаем, сколько клеток влезет
+            let squareSize: CGFloat = 40
+            let count = Int(geo.size.width / squareSize) + 2
             
             HStack(spacing: 0) {
                 ForEach(0..<count, id: \.self) { i in
@@ -98,9 +78,8 @@ struct CheckeredStripe: View {
                         .frame(width: squareSize, height: squareSize)
                 }
             }
-            .frame(width: geo.size.width, alignment: .center)
-            .offset(x: squareSize / 2) // Центрируем, чтобы края были ровные
+            .offset(x: -squareSize / 2) // Центрируем
         }
-        .clipped() // Обрезаем всё, что вылезло за экран
+        .clipped()
     }
 }
