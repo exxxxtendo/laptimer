@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreLocation
+import MapKit
 
 struct ManualTrackView: View {
     @EnvironmentObject var store: TrackStore
@@ -12,7 +13,6 @@ struct ManualTrackView: View {
     var body: some View {
         ZStack {
             ManualTrackMapView(path: $path) { newCoord in
-                // Разрешаем ставить только 2 точки
                 if path.count < 2 {
                     path.append(newCoord)
                 }
@@ -59,7 +59,7 @@ struct ManualTrackView: View {
 
                     HStack(spacing: 12) {
                         Button {
-                            path.removeAll() // Сбрасываем всё
+                            path.removeAll()
                         } label: {
                             Image(systemName: "arrow.uturn.backward")
                                 .font(.title3.weight(.bold))
@@ -105,14 +105,11 @@ struct ManualTrackView: View {
     private func saveTrack() {
         guard let first = path.first, let last = path.last else { return }
         
-        // ВАЖНО: Мы сохраняем только 2 точки. 
-        // Линия маршрута по дорогам не сохраняется в файл, она запрашивается заново при заезде.
-        // Но для подсчета кругов нам нужен старт и финиш.
         let track = Track(
             name: trackName.trimmingCharacters(in: .whitespaces),
             points: [CodableCoordinate(first), CodableCoordinate(last)],
             startPoint: CodableCoordinate(first),
-            lengthMeters: 0 // Длину по дорогам мы не считаем вручную, это сделает Apple при заезде
+            lengthMeters: 0
         )
         store.add(track)
         showNameSheet = false
