@@ -9,13 +9,11 @@ struct SessionView: View {
 
     var body: some View {
         ZStack {
-            // Карта заезда (следит за вами)
             RaceMapView(track: track).ignoresSafeArea()
 
             VStack(spacing: 0) {
                 topBar
                 Spacer()
-                // Панель с таймером и спидометром
                 HUDView(
                     current: engine.currentLapTime,
                     last: engine.lastLapTime,
@@ -38,7 +36,6 @@ struct SessionView: View {
             guard let loc = loc else { return }
             engine.process(loc)
         }
-        // МАГИЯ: Автоматически открываем итоги, когда таймер остановился сам (доехали до финиша)
         .onChange(of: engine.isRunning) { isRunning in
             if !isRunning && engine.lastLapTime != nil {
                 location.stop()
@@ -48,11 +45,9 @@ struct SessionView: View {
         .sheet(isPresented: $showSummary) { summarySheet }
     }
 
-    // Верхняя панель с кнопками
     private var topBar: some View {
         HStack {
             Button {
-                // Ручная остановка, если нужно прервать заезд
                 engine.stop()
                 location.stop()
                 showSummary = true
@@ -69,7 +64,6 @@ struct SessionView: View {
                 .background(.ultraThinMaterial, in: Capsule())
             Spacer()
             Button {
-                // Выход без сохранения результатов
                 engine.stop()
                 location.stop()
                 dismiss()
@@ -83,7 +77,6 @@ struct SessionView: View {
         .padding()
     }
 
-    // Окно с итогами заезда
     private var summarySheet: some View {
         VStack(spacing: 16) {
             Text("Итоги сессии").font(.title2.weight(.bold))
