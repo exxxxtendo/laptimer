@@ -8,23 +8,22 @@ struct RaceMapView: UIViewRepresentable {
         let map = MKMapView()
         map.delegate = context.coordinator
         map.showsUserLocation = true
+        
+        // СРАЗУ включаем слежение, не задавая дефолтных координат
+        map.userTrackingMode = .followWithHeading
         map.showsCompass = true
         map.pointOfInterestFilter = .excludingAll
         map.overrideUserInterfaceStyle = .dark
-        
-        // Ставим дефолтную точку (Москва), чтобы карта не была серой до появления GPS
-        let defaultRegion = MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: 55.7558, longitude: 37.6173),
-            latitudinalMeters: 1000,
-            longitudinalMeters: 1000
-        )
-        map.setRegion(defaultRegion, animated: false)
         
         return map
     }
 
     func updateUIView(_ map: MKMapView, context: Context) {
-        // 1. Рисуем трассу
+        // Принудительно держим фокус на пользователе
+        if map.userTrackingMode != .followWithHeading {
+            map.userTrackingMode = .followWithHeading
+        }
+        
         if context.coordinator.lastTrackID != track?.id {
             map.removeOverlays(map.overlays)
             
@@ -43,8 +42,7 @@ struct RaceMapView: UIViewRepresentable {
                             map.addOverlay(route.polyline)
                         }
                     }
-                } 
-                else if points.count > 2 {
+                } else if points.count > 2 {
                     let coords = points.map { $0.coordinate }
                     let line = MKPolyline(coordinates: coords, count: coords.count)
                     map.addOverlay(line)
@@ -58,20 +56,6 @@ struct RaceMapView: UIViewRepresentable {
 
     final class Coordinator: NSObject, MKMapViewDelegate {
         var lastTrackID: UUID?
-        var didZoom = false
-        
-        // Ждем первого появления GPS и только тогда центрируемся
-        func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
-            guard !didZoom, let loc = userLocation.location else { return }
-            didZoom = true
-            
-            // Задаем регион (зум 300 метров)
-            let region = MKCoordinateRegion(center: loc.coordinate, latitudinalMeters: 300, longitudinalMeters: 300)
-            mapView.setRegion(region, animated: true)
-            
-            // И только теперь включаем режим навигатора (слежение с поворотом)
-            mapView.userTrackingMode = .followWithHeading
-        }
         
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if let poly = overlay as? MKPolyline {
