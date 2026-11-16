@@ -2,11 +2,11 @@ import Foundation
 import CoreLocation
 
 final class LapTimerEngine: ObservableObject {
-    @Published var isRunning: Bool = false
+    @Published var isTiming: Bool = false // Работает ли таймер прямо сейчас
     @Published var currentLapTime: TimeInterval = 0
     @Published var lastLapTime: TimeInterval?
     @Published var bestLapTime: TimeInterval?
-    @Published var delta: TimeInterval = 0 // НОВОЕ: разница с лучшим временем
+    @Published var delta: TimeInterval = 0 
     @Published var lapCount: Int = 0
     @Published var laps: [Lap] = []
     
@@ -14,13 +14,12 @@ final class LapTimerEngine: ObservableObject {
     private var lapStart: Date?
     private var timer: Timer?
     
-    // Настройки срабатывания зон
-    var startZoneRadius: Double = 30 // 30 метров от точки старта
-    var finishZoneRadius: Double = 30 // 30 метров от точки финиша
-    var minSpeedForLap: Double = 2.0 // Минимальная скорость (м/с)
+    var startZoneRadius: Double = 40
+    var finishZoneRadius: Double = 40
     
     private var isInStartZone = false
     private var isInFinishZone = false
+    private var hasLeftStartZone = false
 
     func start(with track: Track) {
         self.track = track
@@ -28,78 +27,83 @@ final class LapTimerEngine: ObservableObject {
         lapCount = 0
         lastLapTime = nil
         bestLapTime = nil
-        delta = 0 // Сбрасываем delta
+        delta = 0
         lapStart = nil
         currentLapTime = 0
         isInStartZone = false
         isInFinishZone = false
-        isRunning = true
-        startTicker()
+        hasLeftStartZone = false
+        isTiming = false
     }
 
     func stop() {
         timer?.invalidate()
         timer = nil
-        isRunning = false
+        isTiming = false
+    }
+
+    func manualStart() {
+        lapStart = Date()
+        currentLapTime = 0
+        delta = 0
+        isTiming = true
+        hasLeftStartZone = true
+        startTicker()
     }
 
     private func startTicker() {
+        timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self, let start = self.lapStart else { return }
             self.currentLapTime = Date().timeIntervalSince(start)
             
-            // ЖИВОЙ РАСЧЕТ DELTA
             if let best = self.bestLapTime {
                 self.delta = self.currentLapTime - best
-            } else {
-                self.delta = 0
             }
         }
     }
 
     func process(_ location: CLLocation) {
-        guard isRunning, let track = track else { return }
+        guard let track = track else { return }
         
-        // Берем координаты старта и финиша
         let startLocation = track.startPoint.clLocation
         let finishLocation = track.points.last?.clLocation ?? startLocation
         
-        let distanceToStart = location.distance(from: startLocation)
-        let distanceToFinish = location.distance(from: finishLocation)
+        let insideStart = location.distance(from: startLocation) < startZoneRadius
+        let insideFinish = location.distance(from: finishLocation) < finishZoneRadius
         
-        let insideStart = distanceToStart < startZoneRadius
-        let insideFinish = distanceToFinish < finishZoneRadius
-        let fastEnough = location.speed > minSpeedForLap
-        
-        // 1. ЛОГИКА СТАРТА
-        if insideStart && !isInStartZone && fastEnough {
-            if lapStart == nil {
-                lapStart = Date()
-                currentLapTime = 0
-                delta = 0
-            }
+        // 1. ЛОГИКА СТАРТА (Запускаем таймер, если мы в зоне старта и таймер еще не идет)
+        if insideStart && !isInStartZone && !isTiming {
+            lapStart = Date()
+            currentLapTime = 0
+            delta = 0
+            isTiming = true
+            hasLeftStartZone = false
+            startTicker()
         }
         
-        // 2. ЛОГИКА ФИНИША
-        if insideFinish && !isInFinishZone && fastEnough {
+        // Запоминаем, что мы покинули стартовую зону (чтобы финиш не сработал моментально)
+        if isTiming && !insideStart {
+            hasLeftStartZone = true
+        }
+        
+        // 2. ЛОГИКА ФИНИША (Останавливаем таймер, но движок продолжает следить за GPS)
+        if insideFinish && !isInFinishZone && isTiming && hasLeftStartZone {
             if let start = lapStart {
                 let t = Date().timeIntervalSince(start)
                 
-                // Защита от случайного срабатывания (минимум 5 секунд)
-                if t >= 5 {
+                if t >= 3 { // Минимум 3 секунды
                     let lap = Lap(time: t, date: Date())
                     laps.append(lap)
                     lapCount += 1
                     lastLapTime = t
-                    
-                    if bestLapTime == nil || t < bestLapTime! {
-                        bestLapTime = t
-                    }
-                    
-                    // Останавливаем таймер, так как доехали до финиша
-                    stop()
+                    if bestLapTime == nil || t < bestLapTime! { bestLapTime = t }
                 }
             }
+            isTiming = false
+            lapStart = nil
+            timer?.invalidate()
+            timer = nil
         }
         
         isInStartZone = insideStart
