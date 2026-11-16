@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SessionView: View {
-    let track: Track
+    let track: Track? // Теперь опционально
     @EnvironmentObject var location: LocationService
     @EnvironmentObject var recordsStore: RecordsStore
     @Environment(\.dismiss) private var dismiss
@@ -11,6 +11,7 @@ struct SessionView: View {
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
+            // Передаем опциональную трассу
             RaceMapView(track: track).ignoresSafeArea()
 
             VStack(spacing: 0) {
@@ -26,16 +27,18 @@ struct SessionView: View {
                 )
             }
             
+            // Полупрозрачный плюс
             Button {
                 engine.stop()
                 location.stop()
-                showTracks = true
+                dismiss()
+                showTracks = true // Если хочешь выбор трассы из заезда
             } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 30, weight: .bold))
                     .foregroundColor(.white)
                     .frame(width: 60, height: 60)
-                    .background(Color.black)
+                    .background(.ultraThinMaterial) // Прозрачный фон
                     .clipShape(Circle())
             }
             .padding(.trailing, 20)
@@ -43,7 +46,7 @@ struct SessionView: View {
         }
         .onAppear {
             location.start()
-            engine.start(with: track)
+            engine.start(with: track) // Передаем опциональную трассу
         }
         .onDisappear {
             engine.stop()
@@ -53,13 +56,11 @@ struct SessionView: View {
             guard let loc = loc else { return }
             engine.process(loc)
         }
-        // Следим за состоянием таймера (isTiming)
         .onChange(of: engine.isTiming) { isTiming in
-            // Если таймер остановился (доехали до финиша) и есть результат
             if !isTiming && engine.lastLapTime != nil {
                 showSummary = true
-                if let best = engine.bestLapTime {
-                    recordsStore.addRecord(trackName: track.name, time: best)
+                if let best = engine.bestLapTime, let trackName = track?.name {
+                    recordsStore.addRecord(trackName: trackName, time: best)
                 }
             }
         }
@@ -73,7 +74,7 @@ struct SessionView: View {
                 Image(systemName: "xmark")
                     .font(.title3.weight(.bold))
                     .padding(12)
-                    .background(Color.black.opacity(0.7))
+                    .background(.ultraThinMaterial) // Прозрачный фон
                     .foregroundColor(.white)
                     .clipShape(Circle())
             }
@@ -84,25 +85,22 @@ struct SessionView: View {
                 Circle()
                     .fill(location.speedKph > 0 ? Color.green : Color.red)
                     .frame(width: 10, height: 10)
-                Text(track.name)
+                Text(track?.name ?? "Free Drive") // Если трассы нет, пишем Free Drive
                     .font(.headline)
                     .foregroundColor(.white)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(Color.black.opacity(0.7))
+            .background(.ultraThinMaterial) // Прозрачный фон
             .clipShape(Capsule())
             
             Spacer()
             
-            // Кнопка ручного старта
-            Button { 
-                engine.manualStart() 
-            } label: {
+            Button { engine.manualStart() } label: {
                 Image(systemName: "flag.fill")
                     .font(.title3.weight(.bold))
                     .padding(12)
-                    .background(Color.black.opacity(0.7))
+                    .background(.ultraThinMaterial)
                     .foregroundColor(engine.isTiming ? .green : .white)
                     .clipShape(Circle())
             }
@@ -130,11 +128,8 @@ struct SessionView: View {
                     Text(lap.date, style: .time).foregroundColor(.secondary)
                 }
             }.listStyle(.plain)
-            
-            Button("Вернуться на карту") { 
-                showSummary = false 
-            }
-            .buttonStyle(.borderedProminent).padding(.bottom)
+            Button("Вернуться на карту") { showSummary = false }
+                .buttonStyle(.borderedProminent).padding(.bottom)
         }.padding()
     }
 }
