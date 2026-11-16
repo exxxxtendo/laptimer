@@ -26,7 +26,6 @@ struct SessionView: View {
                 )
             }
             
-            // Плюсик справа над панелью
             Button {
                 engine.stop()
                 location.stop()
@@ -40,7 +39,7 @@ struct SessionView: View {
                     .clipShape(Circle())
             }
             .padding(.trailing, 20)
-            .padding(.bottom, 145) // Подняли ровно над верхней границей HUD
+            .padding(.bottom, 145)
         }
         .onAppear {
             location.start()
@@ -54,9 +53,10 @@ struct SessionView: View {
             guard let loc = loc else { return }
             engine.process(loc)
         }
-        .onChange(of: engine.isRunning) { isRunning in
-            if !isRunning && engine.lastLapTime != nil {
-                location.stop()
+        // Следим за состоянием таймера (isTiming)
+        .onChange(of: engine.isTiming) { isTiming in
+            // Если таймер остановился (доехали до финиша) и есть результат
+            if !isTiming && engine.lastLapTime != nil {
                 showSummary = true
                 if let best = engine.bestLapTime {
                     recordsStore.addRecord(trackName: track.name, time: best)
@@ -80,17 +80,32 @@ struct SessionView: View {
             
             Spacer()
             
-            Text(track.name)
-                .font(.headline)
-                .foregroundColor(.white)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
-                .background(Color.black.opacity(0.7))
-                .clipShape(Capsule())
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(location.speedKph > 0 ? Color.green : Color.red)
+                    .frame(width: 10, height: 10)
+                Text(track.name)
+                    .font(.headline)
+                    .foregroundColor(.white)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color.black.opacity(0.7))
+            .clipShape(Capsule())
             
             Spacer()
             
-            Circle().fill(Color.clear).frame(width: 44, height: 44) // Симметрия
+            // Кнопка ручного старта
+            Button { 
+                engine.manualStart() 
+            } label: {
+                Image(systemName: "flag.fill")
+                    .font(.title3.weight(.bold))
+                    .padding(12)
+                    .background(Color.black.opacity(0.7))
+                    .foregroundColor(engine.isTiming ? .green : .white)
+                    .clipShape(Circle())
+            }
         }
         .padding(.horizontal)
         .padding(.top, 10)
@@ -98,16 +113,16 @@ struct SessionView: View {
 
     private var summarySheet: some View {
         VStack(spacing: 16) {
-            Text("Итоги сессии").font(.title2.weight(.bold))
-            if let best = engine.bestLapTime {
+            Text("Итоги заезда").font(.title2.weight(.bold))
+            if let last = engine.lastLapTime {
                 VStack(spacing: 4) {
-                    Text("Результат").font(.caption).foregroundColor(.secondary)
-                    Text(Fmt.lap(best)).font(.system(size: 48, weight: .bold, design: .rounded)).monospacedDigit()
+                    Text("Время круга").font(.caption).foregroundColor(.secondary)
+                    Text(Fmt.lap(last)).font(.system(size: 48, weight: .bold, design: .rounded)).monospacedDigit()
                 }
             } else {
                 Text("Время не зафиксировано").foregroundColor(.secondary)
             }
-            Text("Всего заездов: \(engine.lapCount)").font(.headline)
+            Text("Всего кругов: \(engine.lapCount)").font(.headline)
             List(engine.laps) { lap in
                 HStack {
                     Text(Fmt.lap(lap.time)).monospacedDigit()
@@ -115,7 +130,11 @@ struct SessionView: View {
                     Text(lap.date, style: .time).foregroundColor(.secondary)
                 }
             }.listStyle(.plain)
-            Button("Закрыть") { dismiss() }.buttonStyle(.borderedProminent).padding(.bottom)
+            
+            Button("Вернуться на карту") { 
+                showSummary = false 
+            }
+            .buttonStyle(.borderedProminent).padding(.bottom)
         }.padding()
     }
 }
