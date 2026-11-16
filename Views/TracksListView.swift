@@ -7,15 +7,10 @@ struct TracksListView: View {
     @State private var showManualRecorder = false
     @State private var activeTrack: Track?
 
-    // Инициализатор для прозрачного фона списка на iOS 15
-    init() {
-        UITableView.appearance().backgroundColor = .clear
-    }
-
     var body: some View {
         NavigationView {
             ZStack {
-                Color.black.ignoresSafeArea() // Темный фон
+                Color.black.ignoresSafeArea()
                 
                 List {
                     Section {
@@ -46,7 +41,6 @@ struct TracksListView: View {
                         .listRowBackground(Color(white: 0.1))
                     }
                 }
-                // Убрали .scrollContentBackground(.hidden)
             }
             .navigationTitle("Гараж")
             .toolbar {
