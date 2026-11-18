@@ -3,9 +3,11 @@ import SwiftUI
 struct TracksListView: View {
     @EnvironmentObject var store: TrackStore
     @Environment(\.dismiss) private var dismiss
+    
+    @Binding var activeTrack: Track? // Получаем биндинг из RootView
+    
     @State private var showRecorder = false
     @State private var showManualRecorder = false
-    @State private var activeTrack: Track?
 
     var body: some View {
         NavigationView {
@@ -15,7 +17,10 @@ struct TracksListView: View {
                 List {
                     Section {
                         ForEach(store.tracks) { track in
-                            Button { activeTrack = track; dismiss() } label: {
+                            Button { 
+                                activeTrack = track
+                                dismiss() // Закрываем список
+                            } label: {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(track.name).font(.headline).foregroundColor(.white)
                                     Text("\(String(format: "%.0f", track.lengthMeters)) м · \(track.points.count) точек")
@@ -29,14 +34,12 @@ struct TracksListView: View {
 
                     Section {
                         Button { showRecorder = true } label: {
-                            Label("Записать новую трассу", systemImage: "record.circle")
-                                .foregroundColor(.white)
+                            Label("Записать новую трассу", systemImage: "record.circle").foregroundColor(.white)
                         }
                         .listRowBackground(Color(white: 0.1))
                         
                         Button { showManualRecorder = true } label: {
-                            Label("Добавить вручную", systemImage: "hand.draw")
-                                .foregroundColor(.white)
+                            Label("Добавить вручную", systemImage: "hand.draw").foregroundColor(.white)
                         }
                         .listRowBackground(Color(white: 0.1))
                     }
@@ -47,14 +50,7 @@ struct TracksListView: View {
                 Button("Закрыть") { dismiss() }.foregroundColor(.white)
             }
         }
-        .sheet(isPresented: $showRecorder) {
-            RecordTrackView().environmentObject(store)
-        }
-        .sheet(isPresented: $showManualRecorder) {
-            ManualTrackView().environmentObject(store)
-        }
-        .fullScreenCover(item: $activeTrack) { track in
-            SessionView(track: track)
-        }
+        .sheet(isPresented: $showRecorder) { RecordTrackView().environmentObject(store) }
+        .sheet(isPresented: $showManualRecorder) { ManualTrackView().environmentObject(store) }
     }
 }
