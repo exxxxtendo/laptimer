@@ -20,24 +20,20 @@ final class LapTimerEngine: ObservableObject {
     private var isInFinishZone = false
     private var hasLeftStartZone = false
 
-    func start(with track: Track?) {
+    // ДОБАВИЛИ initialBest
+    func start(with track: Track?, initialBest: TimeInterval? = nil) {
         self.track = track
         laps = []
         lapCount = 0
         lastLapTime = nil
-        bestLapTime = nil
+        bestLapTime = initialBest // <--- Устанавливаем рекорд трассы при старте
         delta = 0
         lapStart = nil
         currentLapTime = 0
         isInStartZone = false
         isInFinishZone = false
         hasLeftStartZone = false
-        isTiming = false
-        
-        // Если трасса не выбрана, запускаем таймер сразу (Free Drive)
-        if track == nil {
-            manualStart()
-        }
+        isTiming = false 
     }
 
     func stop() {
@@ -61,6 +57,7 @@ final class LapTimerEngine: ObservableObject {
             guard let self = self, let start = self.lapStart else { return }
             self.currentLapTime = Date().timeIntervalSince(start)
             
+            // Считаем дельту только если есть best
             if let best = self.bestLapTime {
                 self.delta = self.currentLapTime - best
             }
@@ -68,8 +65,12 @@ final class LapTimerEngine: ObservableObject {
     }
 
     func process(_ location: CLLocation) {
-        // Если трассы нет, просто игнорируем логику финиша/старта
-        guard let track = track else { return }
+        guard let track = track else {
+            if !isTiming && location.speed > 1.0 {
+                manualStart()
+            }
+            return
+        }
         
         let startLocation = track.startPoint.clLocation
         let finishLocation = track.points.last?.clLocation ?? startLocation
