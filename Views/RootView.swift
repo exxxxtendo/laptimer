@@ -7,8 +7,9 @@ struct RootView: View {
     
     @State private var showTracks = false
     @State private var showRecords = false
-    @State private var showFreeDrive = false // Открытие пустой карты
-    
+    @State private var showFreeDrive = false
+    @State private var activeTrack: Track? // Храним выбранную трассу здесь
+
     var body: some View {
         ZStack {
             LinearGradient(colors: [Color(red: 0.25, green: 0.0, blue: 0.0), .black], startPoint: .top, endPoint: .bottom)
@@ -23,22 +24,24 @@ struct RootView: View {
                 .padding(.bottom, 50)
             }
             
-            // Кнопка по центру открывает пустую карту (Free Drive)
-            Button {
-                showFreeDrive = true
-            } label: {
-                Image("BeeLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 200, height: 200)
-                    .clipShape(Circle())
+            Button { showFreeDrive = true } label: {
+                Image("BeeLogo").resizable().scaledToFit().frame(width: 200, height: 200).clipShape(Circle())
             }
         }
         .onAppear { location.requestPermission() }
-        .sheet(isPresented: $showTracks) { TracksListView() }
+        .sheet(isPresented: $showTracks) {
+            // Передаем биндинг, чтобы список мог выбрать трассу
+            TracksListView(activeTrack: $activeTrack)
+        }
         .sheet(isPresented: $showRecords) { RecordsListView() }
-        // Передаем nil как трассу
-        .fullScreenCover(isPresented: $showFreeDrive) { SessionView(track: nil) }
+        // Открываем карту для выбранной трассы
+        .fullScreenCover(item: $activeTrack) { track in
+            SessionView(track: track)
+        }
+        // Открываем пустую карту
+        .fullScreenCover(isPresented: $showFreeDrive) {
+            SessionView(track: nil)
+        }
     }
 }
 
