@@ -8,22 +8,13 @@ struct RaceMapView: UIViewRepresentable {
         let map = MKMapView()
         map.delegate = context.coordinator
         map.showsUserLocation = true
-        
-        // СРАЗУ включаем слежение, не задавая дефолтных координат
-        map.userTrackingMode = .followWithHeading
         map.showsCompass = true
         map.pointOfInterestFilter = .excludingAll
         map.overrideUserInterfaceStyle = .dark
-        
         return map
     }
 
     func updateUIView(_ map: MKMapView, context: Context) {
-        // Принудительно держим фокус на пользователе
-        if map.userTrackingMode != .followWithHeading {
-            map.userTrackingMode = .followWithHeading
-        }
-        
         if context.coordinator.lastTrackID != track?.id {
             map.removeOverlays(map.overlays)
             
@@ -56,6 +47,19 @@ struct RaceMapView: UIViewRepresentable {
 
     final class Coordinator: NSObject, MKMapViewDelegate {
         var lastTrackID: UUID?
+        var didZoom = false
+        
+        // Как только GPS найдет нас, делаем зум и включаем режим навигатора
+        func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
+            guard let loc = userLocation.location else { return }
+            
+            if !didZoom {
+                didZoom = true
+                let region = MKCoordinateRegion(center: loc.coordinate, latitudinalMeters: 300, longitudinalMeters: 300)
+                mapView.setRegion(region, animated: true)
+                mapView.userTrackingMode = .followWithHeading
+            }
+        }
         
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if let poly = overlay as? MKPolyline {
