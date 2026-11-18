@@ -1,17 +1,15 @@
 import SwiftUI
 
 struct SessionView: View {
-    let track: Track? // Теперь опционально
+    let track: Track?
     @EnvironmentObject var location: LocationService
     @EnvironmentObject var recordsStore: RecordsStore
     @Environment(\.dismiss) private var dismiss
     @StateObject private var engine = LapTimerEngine()
     @State private var showSummary = false
-    @State private var showTracks = false
-
+    
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
-            // Передаем опциональную трассу
             RaceMapView(track: track).ignoresSafeArea()
 
             VStack(spacing: 0) {
@@ -27,18 +25,16 @@ struct SessionView: View {
                 )
             }
             
-            // Полупрозрачный плюс
             Button {
                 engine.stop()
                 location.stop()
                 dismiss()
-                showTracks = true // Если хочешь выбор трассы из заезда
             } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 30, weight: .bold))
                     .foregroundColor(.white)
                     .frame(width: 60, height: 60)
-                    .background(.ultraThinMaterial) // Прозрачный фон
+                    .background(.ultraThinMaterial)
                     .clipShape(Circle())
             }
             .padding(.trailing, 20)
@@ -46,7 +42,10 @@ struct SessionView: View {
         }
         .onAppear {
             location.start()
-            engine.start(with: track) // Передаем опциональную трассу
+            
+            // ПОДГРУЖАЕМ РЕКОРД ТРАССЫ ПРИ СТАРТЕ
+            let existingBest = track?.name != nil ? recordsStore.records[track!.name] : nil
+            engine.start(with: track, initialBest: existingBest)
         }
         .onDisappear {
             engine.stop()
@@ -65,16 +64,19 @@ struct SessionView: View {
             }
         }
         .sheet(isPresented: $showSummary) { summarySheet }
-        .sheet(isPresented: $showTracks) { TracksListView() }
     }
 
     private var topBar: some View {
         HStack {
-            Button { engine.stop(); location.stop(); dismiss() } label: {
+            Button { 
+                engine.stop()
+                location.stop()
+                dismiss() 
+            } label: {
                 Image(systemName: "xmark")
                     .font(.title3.weight(.bold))
                     .padding(12)
-                    .background(.ultraThinMaterial) // Прозрачный фон
+                    .background(.ultraThinMaterial)
                     .foregroundColor(.white)
                     .clipShape(Circle())
             }
@@ -85,25 +87,20 @@ struct SessionView: View {
                 Circle()
                     .fill(location.speedKph > 0 ? Color.green : Color.red)
                     .frame(width: 10, height: 10)
-                Text(track?.name ?? "Free Drive") // Если трассы нет, пишем Free Drive
+                Text(track?.name ?? "Free Drive")
                     .font(.headline)
                     .foregroundColor(.white)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(.ultraThinMaterial) // Прозрачный фон
+            .background(.ultraThinMaterial)
             .clipShape(Capsule())
             
             Spacer()
             
-            Button { engine.manualStart() } label: {
-                Image(systemName: "flag.fill")
-                    .font(.title3.weight(.bold))
-                    .padding(12)
-                    .background(.ultraThinMaterial)
-                    .foregroundColor(engine.isTiming ? .green : .white)
-                    .clipShape(Circle())
-            }
+            Circle()
+                .fill(Color.clear)
+                .frame(width: 44, height: 44)
         }
         .padding(.horizontal)
         .padding(.top, 10)
@@ -120,14 +117,6 @@ struct SessionView: View {
             } else {
                 Text("Время не зафиксировано").foregroundColor(.secondary)
             }
-            Text("Всего кругов: \(engine.lapCount)").font(.headline)
-            List(engine.laps) { lap in
-                HStack {
-                    Text(Fmt.lap(lap.time)).monospacedDigit()
-                    Spacer()
-                    Text(lap.date, style: .time).foregroundColor(.secondary)
-                }
-            }.listStyle(.plain)
             Button("Вернуться на карту") { showSummary = false }
                 .buttonStyle(.borderedProminent).padding(.bottom)
         }.padding()
