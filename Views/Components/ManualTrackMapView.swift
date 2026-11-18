@@ -1,6 +1,7 @@
 import SwiftUI
 import MapKit
 
+/// Карта для ручной разметки трассы: тап по карте ставит старт, потом финиш.
 struct ManualTrackMapView: UIViewRepresentable {
     let path: [CLLocationCoordinate2D]
     let onTap: (CLLocationCoordinate2D) -> Void
@@ -9,118 +10,140 @@ struct ManualTrackMapView: UIViewRepresentable {
         let map = MKMapView()
         map.delegate = context.coordinator
         map.showsUserLocation = true
+        map.showsCompass = false
+        map.showsBuildings = false
         map.pointOfInterestFilter = .excludingAll
+        map.mapType = .mutedStandard
         map.overrideUserInterfaceStyle = .dark
-        
+        map.isPitchEnabled = false
+
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
+        tap.numberOfTapsRequired = 1
         map.addGestureRecognizer(tap)
+
         return map
     }
 
     func updateUIView(_ map: MKMapView, context: Context) {
-        guard context.coordinator.lastCount != path.count else { return }
-        context.coordinator.lastCount = path.count
-        
-        // Убираем старую линию и старые булавки
-        map.removeOverlays(map.overlays)
-        map.removeAnnotations(map.annotations.filter { !($0 is MKUserLocation) })
-        
-        // ВАЖНО: сначала показываем булавки для всех точек (даже если одна)
-        for (index, coord) in path.enumerated() {
-            let pin = MKPointAnnotation()
-            pin.coordinate = coord
-            pin.title = index == 0 ? "Старт" : "Финиш"
-            map.addAnnotation(pin)
-        }
-        
-        // Если две точки — строим маршрут по дорогам (как в сохраненной трассе)
-        if path.count == 2 {
-            context.coordinator.fetchRoute(from: path[0], to: path[1], on: map)
-        }
+        context.coordinator.onTap = onTap
+        context.coordinator.sync(map: map, path: path)
     }
 
-    func makeCoordinator() -> Coordinator { Coordinator(onTap: onTap) }
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onTap: onTap)
+    }
 
     final class Coordinator: NSObject, MKMapViewDelegate {
-        var lastCount = 0
-        let onTap: (CLLocationCoordinate2D) -> Void
-        var didZoom = false
-        var currentRouteOverlay: MKOverlay?
-        
-        init(onTap: @escaping (CLLocationCoordinate2D) -> Void) { self.onTap = onTap }
-        
+        var onTap: (CLLocationCoordinate2D) -> Void
+        private var lastKey = ""
+        private var didCenterOnUser = false
+        private var routeOverlay: MKOverlay?
+        private var routeRequest: MKDirections?
+
+        init(onTap: @escaping (CLLocationCoordinate2D) -> Void) {
+            self.onTap = onTap
+        }
+
         @objc func handleTap(_ gesture: UITapGestureRecognizer) {
             guard let mapView = gesture.view as? MKMapView else { return }
             let point = gesture.location(in: mapView)
-            let coord = mapView.convert(point, toCoordinateFrom: mapView)
-            onTap(coord)
+            let coordinate = mapView.convert(point, toCoordinateFrom: mapView)
+            onTap(coordinate)
         }
 
-        // Однократный зум к пользователю при старте
-        func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
-            guard !didZoom, let location = userLocation.location else { return }
-            didZoom = true
-            let region = MKCoordinateRegion(center: location.coordinate, latitudinalMeters: 500, longitudinalMeters: 500)
-            mapView.setRegion(region, animated: true)
+        func sync(map: MKMapView, path: [CLLocationCoordinate2D]) {
+            let key = path.map { String(format: "%.5f,%.5f", $0.latitude, $0.longitude) }.joined(separator: "|")
+            guard key != lastKey else { return }
+            lastKey = key
+
+            routeRequest?.cancel()
+            if let routeOverlay = routeOverlay {
+                map.removeOverlay(routeOverlay)
+                self.routeOverlay = nil
+            }
+            map.removeAnnotations(map.annotations.filter { !($0 is MKUserLocation) })
+
+            for (index, coordinate) in path.enumerated() {
+                map.addAnnotation(TrackAnnotation(coordinate: coordinate, kind: index == 0 ? .start : .finish))
+            }
+
+            guard path.count == 2 else { return }
+            loadRoute(map: map, from: path[0], to: path[1])
         }
-        
-        // Запрос маршрута у Apple
-        func fetchRoute(from source: CLLocationCoordinate2D, to destination: CLLocationCoordinate2D, on mapView: MKMapView) {
+
+        private func loadRoute(map: MKMapView, from source: CLLocationCoordinate2D, to destination: CLLocationCoordinate2D) {
             let request = MKDirections.Request()
             request.source = MKMapItem(placemark: MKPlacemark(coordinate: source))
             request.destination = MKMapItem(placemark: MKPlacemark(coordinate: destination))
             request.transportType = .automobile
-            
+
             let directions = MKDirections(request: request)
-            directions.calculate { [weak self] response, error in
-                guard let self = self else { return }
-                
+            routeRequest = directions
+            directions.calculate { [weak self, weak map] response, _ in
                 DispatchQueue.main.async {
-                    if let old = self.currentRouteOverlay {
-                        mapView.removeOverlay(old)
-                    }
-                    
+                    guard let self = self, let map = map else { return }
+
                     if let route = response?.routes.first {
-                        // Маршрут по дорогам найден
-                        mapView.addOverlay(route.polyline)
-                        self.currentRouteOverlay = route.polyline
-                        
-                        // Подгоняем камеру, чтобы видеть весь маршрут
-                        mapView.setVisibleMapRect(
+                        let casing = MKPolyline(coordinates: route.polyline.coordinates, count: route.polyline.pointCount)
+                        casing.title = "casing"
+                        map.addOverlay(casing)
+
+                        let main = MKPolyline(coordinates: route.polyline.coordinates, count: route.polyline.pointCount)
+                        main.title = "main"
+                        map.addOverlay(main)
+                        self.routeOverlay = main
+
+                        map.setVisibleMapRect(
                             route.polyline.boundingMapRect,
-                            edgePadding: UIEdgeInsets(top: 80, left: 80, bottom: 250, right: 80),
+                            edgePadding: UIEdgeInsets(top: 100, left: 60, bottom: 260, right: 60),
                             animated: true
                         )
                     } else {
-                        // Запасной вариант: если Apple не нашла дорог, рисуем прямую
                         let fallback = MKPolyline(coordinates: [source, destination], count: 2)
-                        mapView.addOverlay(fallback)
-                        self.currentRouteOverlay = fallback
-                        print("Не удалось построить маршрут: \(error?.localizedDescription ?? "")")
+                        fallback.title = "main"
+                        map.addOverlay(fallback)
+                        self.routeOverlay = fallback
                     }
                 }
             }
         }
 
-        func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
-            if let poly = overlay as? MKPolyline {
-                let r = MKPolylineRenderer(polyline: poly)
-                r.strokeColor = UIColor.systemBlue
-                r.lineWidth = 6
-                r.lineCap = .round
-                r.lineJoin = .round
-                return r
-            }
-            return MKOverlayRenderer(overlay: overlay)
+        func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
+            guard !didCenterOnUser, let location = userLocation.location else { return }
+            didCenterOnUser = true
+            let region = MKCoordinateRegion(center: location.coordinate, latitudinalMeters: 700, longitudinalMeters: 700)
+            mapView.setRegion(region, animated: false)
         }
-        
-        // Настройка булавок (зеленая старт, красная финиш)
+
+        func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+            guard let polyline = overlay as? MKPolyline else {
+                return MKOverlayRenderer(overlay: overlay)
+            }
+            let renderer = MKPolylineRenderer(polyline: polyline)
+            renderer.lineCap = .round
+            renderer.lineJoin = .round
+
+            if polyline.title == "casing" {
+                renderer.strokeColor = UIColor.black.withAlphaComponent(0.5)
+                renderer.lineWidth = 10
+            } else {
+                renderer.strokeColor = UIColor(Theme.accent)
+                renderer.lineWidth = 5
+            }
+            return renderer
+        }
+
         func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-            guard !(annotation is MKUserLocation) else { return nil }
-            let id = "pin"
-            let view = mapView.dequeueReusableAnnotationView(withIdentifier: id) as? MKMarkerAnnotationView ?? MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: id)
-            view.markerTintColor = annotation.title == "Старт" ? .systemGreen : .systemRed
+            guard let annotation = annotation as? TrackAnnotation else { return nil }
+
+            let view = mapView.dequeueReusableAnnotationView(withIdentifier: "manual-marker", for: annotation) as? MKMarkerAnnotationView
+                ?? MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: "manual-marker")
+            view.annotation = annotation
+            view.canShowCallout = false
             view.animatesWhenAdded = true
+            view.markerTintColor = annotation.kind == .start ? UIColor.systemGreen : UIColor(Theme.accent)
+            view.glyphImage = UIImage(systemName: annotation.kind == .start ? "flag.fill" : "flag.checkered")
+            view.glyphTintColor = .white
             return view
         }
     }

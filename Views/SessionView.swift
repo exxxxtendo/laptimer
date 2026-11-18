@@ -2,123 +2,255 @@ import SwiftUI
 
 struct SessionView: View {
     let track: Track?
-    @EnvironmentObject var location: LocationService
-    @EnvironmentObject var recordsStore: RecordsStore
-    @Environment(\.dismiss) private var dismiss
-    @StateObject private var engine = LapTimerEngine()
-    @State private var showSummary = false
-    
-    var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            RaceMapView(track: track).ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                topBar
-                Spacer()
-                HUDView(
-                    current: engine.currentLapTime,
-                    last: engine.lastLapTime,
-                    best: engine.bestLapTime,
-                    delta: engine.delta,
-                    laps: engine.lapCount,
-                    speedKph: location.speedKph
-                )
-            }
-            
-            Button {
-                engine.stop()
-                location.stop()
-                dismiss()
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 30, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(width: 60, height: 60)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Circle())
-            }
-            .padding(.trailing, 20)
-            .padding(.bottom, 145)
-        }
-        .onAppear {
-            location.start()
-            
-            // ПОДГРУЖАЕМ РЕКОРД ТРАССЫ ПРИ СТАРТЕ
-            let existingBest = track?.name != nil ? recordsStore.records[track!.name] : nil
-            engine.start(with: track, initialBest: existingBest)
-        }
-        .onDisappear {
-            engine.stop()
-            location.stop()
-        }
-        .onChange(of: location.lastLocation) { loc in
-            guard let loc = loc else { return }
-            engine.process(loc)
-        }
-        .onChange(of: engine.isTiming) { isTiming in
-            if !isTiming && engine.lastLapTime != nil {
-                showSummary = true
-                if let best = engine.bestLapTime, let trackName = track?.name {
-                    recordsStore.addRecord(trackName: trackName, time: best)
-                }
-            }
-        }
-        .sheet(isPresented: $showSummary) { summarySheet }
+    @EnvironmentObject private var store: TrackStore
+    @EnvironmentObject private var location: LocationService
+    @EnvironmentObject private var records: RecordsStore
+    @Environment(\.dismiss) private var dismiss
+
+    @StateObject private var engine: LapTimerEngine
+    @State private var showSummary = false
+    @State private var completedSession: SessionResult?
+    @State private var showStopConfirmation = false
+    @State private var recenterToken = 0
+
+    init(track: Track?) {
+        self.track = track
+        _engine = StateObject(wrappedValue: LapTimerEngine(track: track))
     }
+
+    private var followsUser: Bool {
+        engine.isFreeMode ? false : true
+    }
+
+    var body: some View {
+        ZStack {
+            RaceMapView(track: track, followsUser: followsUser, recenterToken: recenterToken)
+                .ignoresSafeArea()
+
+            VStack(spacing: 12) {
+                topBar
+
+                if engine.isFreeMode {
+                    Spacer()
+                } else {
+                    Spacer(minLength: 0)
+                    lapStrip
+                }
+
+                Spacer()
+
+                bottomControls
+            }
+            .padding(.horizontal, Theme.screenPadding)
+        }
+        .preferredColorScheme(.dark)
+        .onAppear(perform: startSession)
+        .onDisappear(perform: finishSession)
+        .onChange(of: location.lastLocation) { newLocation in
+            guard let location = newLocation else { return }
+            engine.process(location)
+        }
+        .confirmationDialog(
+            "Завершить заезд?",
+            isPresented: $showStopConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(engine.hasData ? "Сохранить и выйти" : "Выйти", role: .destructive) {
+                stopSession()
+            }
+            Button("Отмена", role: .cancel) {}
+        } message: {
+            if engine.hasData {
+                Text("Кругов зафиксировано: \(engine.lapCount)")
+            } else {
+                Text("Ни одного круга не зафиксировано.")
+            }
+        }
+        .sheet(isPresented: $showSummary, onDismiss: { dismiss() }) {
+            if let session = completedSession {
+                SummaryView(session: session)
+                    .environmentObject(records)
+            }
+        }
+    }
+
+    // MARK: - Top bar
 
     private var topBar: some View {
-        HStack {
-            Button { 
-                engine.stop()
-                location.stop()
-                dismiss() 
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.title3.weight(.bold))
-                    .padding(12)
-                    .background(.ultraThinMaterial)
-                    .foregroundColor(.white)
-                    .clipShape(Circle())
-            }
-            
-            Spacer()
-            
-            HStack(spacing: 6) {
+        HStack(spacing: 12) {
+            MapControlButton(icon: "xmark") { showStopConfirmation = true }
+
+            Spacer(minLength: 8)
+
+            HStack(spacing: 7) {
                 Circle()
-                    .fill(location.speedKph > 0 ? Color.green : Color.red)
-                    .frame(width: 10, height: 10)
-                Text(track?.name ?? "Free Drive")
-                    .font(.headline)
+                    .fill(location.hasFix ? Theme.positive : Theme.warning)
+                    .frame(width: 7, height: 7)
+                Text(track?.name ?? "Свободный заезд")
+                    .font(Theme.body(13, weight: .bold))
                     .foregroundColor(.white)
+                    .lineLimit(1)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(.ultraThinMaterial)
-            .clipShape(Capsule())
-            
-            Spacer()
-            
-            Circle()
-                .fill(Color.clear)
-                .frame(width: 44, height: 44)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 9)
+            .background(Capsule().fill(Color.black.opacity(0.55)))
+            .overlay(Capsule().stroke(Theme.stroke, lineWidth: 1))
+
+            Spacer(minLength: 8)
+
+            MapControlButton(icon: "location.fill") {
+                recenterToken += 1
+            }
         }
-        .padding(.horizontal)
-        .padding(.top, 10)
     }
 
-    private var summarySheet: some View {
-        VStack(spacing: 16) {
-            Text("Итоги заезда").font(.title2.weight(.bold))
-            if let last = engine.lastLapTime {
-                VStack(spacing: 4) {
-                    Text("Время круга").font(.caption).foregroundColor(.secondary)
-                    Text(Fmt.lap(last)).font(.system(size: 48, weight: .bold, design: .rounded)).monospacedDigit()
+    // MARK: - Список кругов над HUD
+
+    private var lapStrip: some View {
+        Group {
+            if engine.laps.isEmpty {
+                EmptyView()
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(engine.laps.suffix(8).reversed()) { lap in
+                            LapChip(lap: lap, isBest: lap.time == engine.bestLapTime)
+                        }
+                    }
+                    .padding(.horizontal, 2)
+                    .padding(.vertical, 2)
+                }
+            }
+        }
+    }
+
+    // MARK: - Низ: HUD и кнопки
+
+    private var bottomControls: some View {
+        VStack(spacing: 12) {
+            if engine.isFreeMode {
+                FreeHUD(
+                    state: engine.state,
+                    currentLapTime: engine.currentLapTime,
+                    speedKph: engine.speedKph,
+                    distanceMeters: engine.distanceMeters,
+                    topSpeedKph: engine.topSpeedKph,
+                    lapCount: engine.lapCount,
+                    bestLapTime: engine.bestLapTime
+                )
+
+                Button(action: { engine.toggleFreeSession() }) {
+                    Text(freeButtonTitle)
+                        .font(Theme.number(16, weight: .heavy))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 54)
+                        .background(
+                            RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
+                                .fill(freeButtonColor)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
+                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                        )
                 }
             } else {
-                Text("Время не зафиксировано").foregroundColor(.secondary)
+                TrackHUD(
+                    state: engine.state,
+                    currentLapTime: engine.currentLapTime,
+                    lastLapTime: engine.lastLapTime,
+                    bestLapTime: engine.bestLapTime,
+                    predictedLapTime: engine.predictedLapTime,
+                    delta: engine.delta,
+                    lapNumber: engine.lapCount,
+                    speedKph: engine.speedKph,
+                    hasReference: engine.referenceBest != nil
+                )
             }
-            Button("Вернуться на карту") { showSummary = false }
-                .buttonStyle(.borderedProminent).padding(.bottom)
-        }.padding()
+        }
+    }
+
+    private var freeButtonTitle: String {
+        switch engine.state {
+        case .idle, .armed:
+            return "СТАРТ"
+        case .running:
+            return "ПАУЗА"
+        case .paused:
+            return "ПРОДОЛЖИТЬ"
+        }
+    }
+
+    private var freeButtonColor: Color {
+        switch engine.state {
+        case .idle, .armed:
+            return Theme.accent
+        case .running:
+            return Theme.warning.opacity(0.85)
+        case .paused:
+            return Theme.positive
+        }
+    }
+
+    // MARK: - Логика
+
+    private func startSession() {
+        location.start()
+        let reference = track.flatMap { records.record(for: $0.id)?.bestLap }
+        engine.start(from: location.lastLocation, reference: reference)
+    }
+
+    private func finishSession() {
+        engine.stop()
+        location.stop()
+    }
+
+    private func stopSession() {
+        engine.stop()
+
+        guard engine.hasData else {
+            dismiss()
+            return
+        }
+
+        var session = SessionResult(
+            trackID: track?.id,
+            trackName: track?.name ?? "Свободный заезд"
+        )
+        session.laps = engine.laps
+        completedSession = session
+        showSummary = true
+    }
+}
+
+// MARK: - Чип круга
+
+struct LapChip: View {
+    let lap: Lap
+    let isBest: Bool
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text("\(lap.index)")
+                .font(Theme.label(10))
+                .foregroundColor(Theme.textTertiary)
+                .frame(width: 16)
+            Text(Fmt.lap(lap.time))
+                .font(Theme.number(13, weight: .bold))
+                .foregroundColor(isBest ? Theme.positive : .white)
+                .monospacedDigit()
+            if isBest {
+                Image(systemName: "crown.fill")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(Theme.warning)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(
+            Capsule().fill(Color.black.opacity(0.55))
+        )
+        .overlay(Capsule().stroke(isBest ? Theme.positive.opacity(0.4) : Theme.stroke, lineWidth: 1))
     }
 }

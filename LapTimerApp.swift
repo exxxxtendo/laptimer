@@ -13,6 +13,7 @@ struct LapTimerApp: App {
                 .environmentObject(location)
                 .environmentObject(recordsStore)
                 .preferredColorScheme(.dark)
+                .tint(Color(hex: 0xFF2E3A))
         }
     }
 }
