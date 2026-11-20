@@ -27,11 +27,6 @@ enum Fmt {
         return value < 0 ? "-\(text)" : "+\(text)"
     }
 
-    static func speed(_ kph: Double) -> String {
-        guard kph.isFinite else { return "0" }
-        return String(format: "%.0f", max(0, kph))
-    }
-
     static func distance(_ meters: Double) -> String {
         guard meters.isFinite, meters >= 0 else { return "0 м" }
         if meters < 1000 { return String(format: "%.0f м", meters) }

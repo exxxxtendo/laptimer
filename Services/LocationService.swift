@@ -10,7 +10,6 @@ import CoreLocation
 /// - запрашиваем «всегда» разрешение, но не падаем, если дали только «при использовании».
 final class LocationService: NSObject, ObservableObject {
     @Published private(set) var lastLocation: CLLocation?
-    @Published private(set) var speedKph: Double = 0
     @Published private(set) var horizontalAccuracy: Double = -1
     @Published private(set) var authorizationStatus: CLAuthorizationStatus = .notDetermined
     @Published private(set) var isUpdating: Bool = false
@@ -111,16 +110,8 @@ extension LocationService: CLLocationManagerDelegate {
               abs(location.timestamp.timeIntervalSinceNow) < 10
         else { return }
 
-        let kph: Double
-        if location.speed >= 0, location.speed < 200 {
-            kph = location.speed * 3.6
-        } else {
-            kph = 0
-        }
-
         DispatchQueue.main.async {
             self.lastLocation = location
-            self.speedKph = kph
             self.horizontalAccuracy = location.horizontalAccuracy
         }
     }

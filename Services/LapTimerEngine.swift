@@ -67,8 +67,6 @@ final class LapTimerEngine: ObservableObject {
     @Published private(set) var predictedLapTime: TimeInterval?
     @Published private(set) var delta: TimeInterval?
     @Published private(set) var laps: [Lap] = []
-    @Published private(set) var speedKph: Double = 0
-    @Published private(set) var topSpeedKph: Double = 0
     @Published private(set) var distanceMeters: Double = 0
     @Published private(set) var progress: Double = 0
 
@@ -130,8 +128,6 @@ final class LapTimerEngine: ObservableObject {
         delta = nil
         currentLapTime = 0
         distanceMeters = 0
-        topSpeedKph = 0
-        speedKph = 0
         progress = 0
         smoothedProgress = 0
         hasProgressThisLap = false
@@ -183,7 +179,6 @@ final class LapTimerEngine: ObservableObject {
         elapsedBase = 0
         lapStart = nil
         distanceMeters = 0
-        topSpeedKph = 0
         progress = 0
         smoothedProgress = 0
         hasProgressThisLap = false
@@ -236,10 +231,6 @@ final class LapTimerEngine: ObservableObject {
     func process(_ location: CLLocation) {
         guard location.horizontalAccuracy >= 0, location.horizontalAccuracy <= 50 else { return }
         guard abs(location.timestamp.timeIntervalSinceNow) < 8 else { return }
-
-        let kph = (location.speed >= 0 && location.speed < 200) ? location.speed * 3.6 : 0
-        speedKph = kph
-        if kph > topSpeedKph { topSpeedKph = kph }
 
         let previous = lastLocation
         if let previous = previous, location.speed >= 0.5 {
