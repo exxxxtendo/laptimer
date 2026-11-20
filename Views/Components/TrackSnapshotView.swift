@@ -1,24 +1,59 @@
-﻿import SwiftUI
+import SwiftUI
 import UIKit
 import MapKit
 
 /// Рисует превью трассы (карта + линия) для карточек списка.
-/// Одна картинка кешируется, поэтому список не тормозит при прокрутке.
+///
+/// Линия строится по `track.points`. У трасс, созданных «по дорогам»,
+/// там лежит полная геометрия маршрута, поэтому превью совпадает с заездом.
+/// Если геометрии ещё нет (старые трассы), она подгружается один раз.
 enum RouteSnapshotService {
     private static let cache = NSCache<NSString, UIImage>()
 
     static func image(for track: Track,
                       size: CGSize,
                       completion: @escaping (UIImage?) -> Void) {
-        let key = "\(track.id.uuidString)-\(Int(size.width))x\(Int(size.height))-\(track.points.count)" as NSString
+        let key = cacheKey(for: track, size: size)
         if let cached = cache.object(forKey: key) {
             completion(cached)
             return
         }
 
-        let coordinates = track.points.count > 1
-            ? track.points.map { $0.coordinate }
-            : [track.startPoint.coordinate, track.finishPoint.coordinate]
+        if track.needsRouteGeometry {
+            // Старая трасса без геометрии: сначала дотягиваем маршрут.
+            RouteGeometryLoader.load(for: track) { updated in
+                guard let updated = updated else {
+                    render(track: track, size: size, key: key, completion: completion)
+                    return
+                }
+                render(track: updated, size: size, key: key, completion: completion)
+            }
+            return
+        }
+
+        render(track: track, size: size, key: key, completion: completion)
+    }
+
+    static func clearCache() {
+        cache.removeAllObjects()
+    }
+
+    // MARK: - Приватное
+
+    private static func cacheKey(for track: Track, size: CGSize) -> NSString {
+        "\(track.id.uuidString)-\(Int(size.width))x\(Int(size.height))-\(track.points.count)-\(track.hasRouteGeometry)" as NSString
+    }
+
+    private static func render(track: Track,
+                               size: CGSize,
+                               key: NSString,
+                               completion: @escaping (UIImage?) -> Void) {
+        let coordinates: [CLLocationCoordinate2D]
+        if track.points.count > 1 {
+            coordinates = track.points.map { $0.coordinate }
+        } else {
+            coordinates = [track.startPoint.coordinate, track.finishPoint.coordinate]
+        }
 
         let options = MKMapSnapshotter.Options()
         options.size = size
@@ -80,10 +115,6 @@ enum RouteSnapshotService {
                 completion(image)
             }
         }
-    }
-
-    static func clearCache() {
-        cache.removeAllObjects()
     }
 }
 

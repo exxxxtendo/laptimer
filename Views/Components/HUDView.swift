@@ -96,94 +96,87 @@ struct TrackHUD: View {
     let predictedLapTime: TimeInterval?
     let delta: TimeInterval?
     let lapNumber: Int
-    let speedKph: Double
     let hasReference: Bool
 
     var body: some View {
-        VStack(spacing: 10) {
-            speedBlock
-            lapBlock
+        Panel {
+            VStack(spacing: 12) {
+                header
+
+                timeBlock
+
+                Rectangle()
+                    .fill(Theme.strokeStrong)
+                    .frame(height: 1.5)
+
+                HStack(alignment: .top, spacing: 6) {
+                    HudMetric(label: "прогноз",
+                              value: predictedLapTime.map(Fmt.lap) ?? "—",
+                              tint: Theme.textSecondary)
+                    Spacer(minLength: 2)
+                    HudMetric(label: "последний",
+                              value: lastLapTime.map(Fmt.lap) ?? "—",
+                              tint: .white)
+                    Spacer(minLength: 2)
+                    HudMetric(label: "лучший",
+                              value: bestLapTime.map(Fmt.lap) ?? "—",
+                              tint: bestLapTime == nil ? Theme.textTertiary : Theme.positive,
+                              alignment: .trailing)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
         }
     }
 
-    // Верхняя строка: скорость гигантом + статус круга
-    private var speedBlock: some View {
-        HStack(alignment: .bottom, spacing: 12) {
-            VStack(alignment: .leading, spacing: -8) {
-                Text(Fmt.speed(speedKph))
-                    .font(Theme.timer(76))
-                    .foregroundColor(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                    .monospacedDigit()
-                    .shadow(color: Theme.accent.opacity(0.85), radius: 22)
-                Text("КМ/Ч")
+    private var header: some View {
+        HStack(spacing: 8) {
+            HStack(spacing: 7) {
+                PulseDot(color: state == .running ? Theme.accent : Theme.accentWarm)
+                Text(statusText)
                     .font(Theme.label(11))
-                    .kerning(3)
-                    .foregroundColor(Theme.accentLemon)
+                    .foregroundColor(.white)
+                    .kerning(1)
             }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Capsule().fill(Theme.surfaceElevated))
+            .overlay(Capsule().stroke(Theme.strokeStrong, lineWidth: 1))
 
-            Spacer(minLength: 0)
+            Spacer()
 
-            VStack(alignment: .trailing, spacing: 8) {
-                SlantedTag(text: statusText,
-                           color: state == .running ? Theme.accent : Theme.accentWarm)
-                Text(deltaText)
-                    .font(Theme.number(22, weight: .black))
+            HStack(spacing: 6) {
+                Text("Δ")
+                    .font(Theme.label(11))
+                    .foregroundColor(Theme.textTertiary)
+                Text(hasReference ? Fmt.delta(delta) : "—")
+                    .font(Theme.number(15, weight: .black))
                     .foregroundColor(deltaColor)
                     .monospacedDigit()
-                    .shadow(color: deltaColor.opacity(0.8), radius: 10)
+                    .shadow(color: deltaColor.opacity(0.7), radius: 8)
             }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Capsule().fill(Theme.surfaceElevated))
+            .overlay(Capsule().stroke(Theme.strokeStrong, lineWidth: 1))
         }
     }
 
-    // Нижняя карточка: время круга + метрики
-    private var lapBlock: some View {
-        VStack(spacing: 12) {
-            HStack(alignment: .lastTextBaseline) {
-                Text("КРУГ")
-                    .font(Theme.label(10))
-                    .kerning(2)
-                    .foregroundColor(Theme.textTertiary)
-                Spacer()
-                Text(Fmt.lap(currentLapTime))
-                    .font(Theme.timer(46))
-                    .foregroundColor(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.45)
-                    .monospacedDigit()
-            }
-
-            Rectangle()
-                .fill(Theme.strokeStrong)
-                .frame(height: 1.5)
-
-            HStack(alignment: .top, spacing: 6) {
-                HudMetric(label: "прогноз",
-                          value: predictedLapTime.map(Fmt.lap) ?? "—",
-                          tint: Theme.textSecondary)
-                Spacer(minLength: 2)
-                HudMetric(label: "последний",
-                          value: lastLapTime.map(Fmt.lap) ?? "—",
-                          tint: .white)
-                Spacer(minLength: 2)
-                HudMetric(label: "лучший",
-                          value: bestLapTime.map(Fmt.lap) ?? "—",
-                          tint: bestLapTime == nil ? Theme.textTertiary : Theme.positive,
-                          alignment: .trailing)
-            }
+    private var timeBlock: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("ВРЕМЯ КРУГА")
+                .font(Theme.label(10))
+                .kerning(2)
+                .foregroundColor(Theme.textTertiary)
+            Text(Fmt.lap(currentLapTime))
+                .font(Theme.timer(52))
+                .foregroundColor(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.45)
+                .monospacedDigit()
+                .shadow(color: Theme.accent.opacity(0.55), radius: 16)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .background(
-            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                .fill(Theme.surface.opacity(0.94))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                .stroke(Theme.strokeStrong, lineWidth: 1.5)
-        )
-        .shadow(color: Theme.accent.opacity(0.3), radius: 20)
     }
 
     private var statusText: String {
@@ -195,11 +188,6 @@ struct TrackHUD: View {
         default:
             return "ПАУЗА"
         }
-    }
-
-    private var deltaText: String {
-        guard hasReference, delta != nil else { return "—" }
-        return Fmt.delta(delta)
     }
 
     private var deltaColor: Color {
@@ -215,92 +203,77 @@ struct TrackHUD: View {
 struct FreeHUD: View {
     let state: SessionState
     let currentLapTime: TimeInterval
-    let speedKph: Double
     let distanceMeters: Double
-    let topSpeedKph: Double
     let lapCount: Int
     let bestLapTime: TimeInterval?
 
     var body: some View {
-        VStack(spacing: 10) {
-            speedBlock
-            timeBlock
+        Panel {
+            VStack(spacing: 12) {
+                header
+
+                timeBlock
+
+                Rectangle()
+                    .fill(Theme.strokeStrong)
+                    .frame(height: 1.5)
+
+                HStack(alignment: .top, spacing: 6) {
+                    HudMetric(label: "дистанция", value: Fmt.distance(distanceMeters), tint: .white)
+                    Spacer(minLength: 2)
+                    HudMetric(label: "кругов", value: "\(lapCount)", tint: Theme.accentCyan)
+                    Spacer(minLength: 2)
+                    HudMetric(label: "лучший круг",
+                              value: bestLapTime.map(Fmt.lap) ?? "—",
+                              tint: Theme.positive,
+                              alignment: .trailing)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
         }
     }
 
-    private var speedBlock: some View {
-        HStack(alignment: .bottom, spacing: 12) {
-            VStack(alignment: .leading, spacing: -8) {
-                Text(Fmt.speed(speedKph))
-                    .font(Theme.timer(76))
-                    .foregroundColor(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                    .monospacedDigit()
-                    .shadow(color: Theme.accent.opacity(0.85), radius: 22)
-                Text("КМ/Ч")
+    private var header: some View {
+        HStack(spacing: 8) {
+            HStack(spacing: 7) {
+                PulseDot(color: state == .running ? Theme.accent : Theme.textTertiary)
+                Text(statusText)
                     .font(Theme.label(11))
-                    .kerning(3)
-                    .foregroundColor(Theme.accentLemon)
+                    .foregroundColor(.white)
+                    .kerning(1)
             }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Capsule().fill(Theme.surfaceElevated))
+            .overlay(Capsule().stroke(Theme.strokeStrong, lineWidth: 1))
 
-            Spacer(minLength: 0)
+            Spacer()
 
-            VStack(alignment: .trailing, spacing: 8) {
-                SlantedTag(text: statusText,
-                           color: state == .running ? Theme.accent : Theme.accentWarm)
-                if lapCount > 0 {
-                    Text("\(lapCount) КРУГ")
-                        .font(Theme.number(14, weight: .black))
-                        .foregroundColor(Theme.accentCyan)
-                        .kerning(1)
-                }
+            if lapCount > 0 {
+                Text("КРУГОВ: \(lapCount)")
+                    .font(Theme.label(10))
+                    .kerning(0.8)
+                    .foregroundColor(Theme.accentCyan)
             }
         }
     }
 
     private var timeBlock: some View {
-        VStack(spacing: 12) {
-            HStack(alignment: .lastTextBaseline) {
-                Text("ВРЕМЯ")
-                    .font(Theme.label(10))
-                    .kerning(2)
-                    .foregroundColor(Theme.textTertiary)
-                Spacer()
-                Text(Fmt.lap(currentLapTime))
-                    .font(Theme.timer(46))
-                    .foregroundColor(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.45)
-                    .monospacedDigit()
-            }
-
-            Rectangle()
-                .fill(Theme.strokeStrong)
-                .frame(height: 1.5)
-
-            HStack(alignment: .top, spacing: 6) {
-                HudMetric(label: "дистанция", value: Fmt.distance(distanceMeters), tint: .white)
-                Spacer(minLength: 2)
-                HudMetric(label: "макс. скорость", value: Fmt.speed(topSpeedKph), tint: Theme.accentLemon)
-                Spacer(minLength: 2)
-                HudMetric(label: "лучший круг",
-                          value: bestLapTime.map(Fmt.lap) ?? "—",
-                          tint: Theme.positive,
-                          alignment: .trailing)
-            }
+        VStack(alignment: .leading, spacing: 0) {
+            Text("ВРЕМЯ")
+                .font(Theme.label(10))
+                .kerning(2)
+                .foregroundColor(Theme.textTertiary)
+            Text(Fmt.lap(currentLapTime))
+                .font(Theme.timer(52))
+                .foregroundColor(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.45)
+                .monospacedDigit()
+                .shadow(color: Theme.accent.opacity(0.55), radius: 16)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .background(
-            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                .fill(Theme.surface.opacity(0.94))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                .stroke(Theme.strokeStrong, lineWidth: 1.5)
-        )
-        .shadow(color: Theme.accent.opacity(0.3), radius: 20)
     }
 
     private var statusText: String {

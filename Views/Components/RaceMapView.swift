@@ -173,15 +173,3 @@ struct RaceMapView: UIViewRepresentable {
         }
     }
 }
-
-extension MKPolyline {
-    var coordinates: [CLLocationCoordinate2D] {
-        var result: [CLLocationCoordinate2D] = []
-        result.reserveCapacity(pointCount)
-        let points = self.points()
-        for index in 0..<pointCount {
-            result.append(points[index].coordinate)
-        }
-        return result
-    }
-}
