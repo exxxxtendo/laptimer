@@ -195,26 +195,9 @@ struct SessionView: View {
                     lapNumber: engine.lapCount,
                     hasReference: engine.referenceBest != nil
                 )
-
-                Button(action: { showStopConfirmation = true }) {
-                    Text("ЗАКОНЧИТЬ ЗАЕЗД")
-                        .font(Theme.number(15, weight: .black))
-                        .kerning(1.2)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(
-                            RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
-                                .fill(Theme.surfaceElevated)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
-                                .stroke(Theme.strokeStrong, lineWidth: 1.5)
-                        )
-                }
             }
         }
-        .padding(.bottom, 8)
+        .padding(.bottom, 6)
     }
 
     private var freeButtonTitle: String {
