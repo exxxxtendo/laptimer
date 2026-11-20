@@ -1,4 +1,4 @@
-﻿import SwiftUI
+import SwiftUI
 import MapKit
 
 /// Маркер старта/финиша на карте.
@@ -64,9 +64,10 @@ struct RaceMapView: UIViewRepresentable {
 
     final class Coordinator: NSObject, MKMapViewDelegate {
         private var loadedTrackID: UUID?
-        private var didCenterOnUser = false
+        /// Не `private`: сбрасывается из `updateUIView` того же файла.
+        fileprivate var didCenterOnUser = false
         private var routeRequest: MKDirections?
-        private var lastRecenterToken = 0
+        fileprivate var lastRecenterToken = 0
 
         func sync(map: MKMapView, track: Track?) {
             let trackID = track?.id
