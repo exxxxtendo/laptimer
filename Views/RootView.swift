@@ -9,6 +9,7 @@ struct RootView: View {
     @State private var showRecords = false
     @State private var sessionTarget: SessionTarget?
     @State private var heroPulse = false
+    @State private var logoGlow = false
 
     private struct SessionTarget: Identifiable {
         let id = UUID()
@@ -23,28 +24,31 @@ struct RootView: View {
                 header
                     .padding(.top, 8)
 
-                Spacer(minLength: 12)
+                Spacer(minLength: 8)
 
                 hero
 
-                Spacer(minLength: 12)
+                Spacer(minLength: 8)
 
                 if store.lastTrack != nil {
                     quickStart
-                        .padding(.bottom, 12)
+                        .padding(.bottom, 10)
                 }
 
                 menuRow
             }
             .padding(.horizontal, Theme.screenPadding)
-            .padding(.bottom, 20)
+            .padding(.bottom, 18)
         }
         .preferredColorScheme(.dark)
         .onAppear {
             location.requestPermission()
             records.migrateLegacy(tracks: store.tracks)
-            withAnimation(Animation.easeOut(duration: 2.4).repeatForever(autoreverses: false)) {
+            withAnimation(Animation.easeOut(duration: 2.0).repeatForever(autoreverses: false)) {
                 heroPulse = true
+            }
+            withAnimation(Animation.easeInOut(duration: 1.8).repeatForever(autoreverses: true)) {
+                logoGlow = true
             }
         }
         .sheet(isPresented: $showTracks) {
@@ -70,15 +74,16 @@ struct RootView: View {
 
     private var header: some View {
         HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: 0) {
                 Text("GUCCI")
-                    .font(Theme.number(17, weight: .black))
-                    .kerning(3)
+                    .font(Theme.display(24))
+                    .kerning(1)
                     .foregroundColor(.white)
+                    .shadow(color: Theme.accent, radius: logoGlow ? 18 : 8)
                 Text("RACING")
-                    .font(Theme.label(9))
-                    .kerning(4)
-                    .foregroundColor(Theme.accent)
+                    .font(Theme.label(10))
+                    .kerning(5.5)
+                    .foregroundColor(Theme.accentLemon)
             }
 
             Spacer()
@@ -87,15 +92,17 @@ struct RootView: View {
                 HStack(spacing: 6) {
                     Circle()
                         .fill(gpsColor)
-                        .frame(width: 6, height: 6)
+                        .frame(width: 7, height: 7)
+                        .shadow(color: gpsColor, radius: 5)
                     Text(gpsText)
-                        .font(Theme.label(10))
-                        .kerning(0.6)
+                        .font(Theme.label(9))
+                        .kerning(0.8)
                         .foregroundColor(Theme.textSecondary)
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
-                .background(Capsule().fill(Color.white.opacity(0.07)))
+                .padding(.horizontal, 11)
+                .padding(.vertical, 8)
+                .background(Capsule().fill(Theme.surface.opacity(0.9)))
+                .overlay(Capsule().stroke(Theme.strokeStrong, lineWidth: 1.5))
             }
             .buttonStyle(PlainButtonStyle())
         }
@@ -103,7 +110,7 @@ struct RootView: View {
 
     private var gpsColor: Color {
         if !location.isAuthorized { return Theme.negative }
-        return location.hasFix ? Theme.positive : Theme.warning
+        return location.hasFix ? Theme.positive : Theme.accentLemon
     }
 
     private var gpsText: String {
@@ -117,44 +124,59 @@ struct RootView: View {
     // MARK: - Hero
 
     private var hero: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 16) {
             Button(action: { start(nil) }) {
                 ZStack {
+                    // Внешнее неоновое кольцо-пульс.
                     Circle()
-                        .stroke(Theme.accent.opacity(0.3), lineWidth: 1)
-                        .frame(width: 250, height: 250)
-                        .scaleEffect(heroPulse ? 1.07 : 0.93)
+                        .stroke(Theme.accent.opacity(0.55), lineWidth: 2)
+                        .frame(width: 246, height: 246)
+                        .scaleEffect(heroPulse ? 1.12 : 0.88)
                         .opacity(heroPulse ? 0 : 0.9)
 
                     Circle()
+                        .stroke(Theme.accentLemon.opacity(0.35), lineWidth: 1.5)
+                        .frame(width: 268, height: 268)
+                        .scaleEffect(heroPulse ? 1.05 : 0.95)
+
+                    // Свечение под лого.
+                    Circle()
                         .fill(
                             RadialGradient(
-                                gradient: Gradient(colors: [Theme.accent.opacity(0.22), Color.clear]),
+                                gradient: Gradient(colors: [
+                                    Theme.accent.opacity(0.55),
+                                    Theme.accentViolet.opacity(0.22),
+                                    Color.clear
+                                ]),
                                 center: .center,
-                                startRadius: 20,
-                                endRadius: 130
+                                startRadius: 10,
+                                endRadius: 140
                             )
                         )
-                        .frame(width: 250, height: 250)
+                        .frame(width: 260, height: 260)
+                        .scaleEffect(logoGlow ? 1.06 : 0.96)
 
                     Image("BeeLogo")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 198, height: 198)
+                        .frame(width: 190, height: 190)
                         .clipShape(Circle())
-                        .overlay(Circle().stroke(Theme.accent.opacity(0.55), lineWidth: 2))
-                        .shadow(color: Theme.accent.opacity(0.35), radius: 26, x: 0, y: 0)
+                        .overlay(
+                            Circle().stroke(Theme.accentLemon, lineWidth: 2.5)
+                        )
+                        .shadow(color: Theme.accent.opacity(0.9), radius: 30)
                 }
             }
             .buttonStyle(PlainButtonStyle())
 
-            VStack(spacing: 4) {
+            VStack(spacing: 3) {
                 Text("СВОБОДНЫЙ ЗАЕЗД")
-                    .font(Theme.number(15, weight: .black))
-                    .kerning(2)
+                    .font(Theme.number(16, weight: .black))
+                    .kerning(2.4)
                     .foregroundColor(.white)
-                Text("секундомер и телеметрия")
-                    .font(Theme.body(12))
+                    .shadow(color: Theme.accent, radius: 12)
+                Text("секундомер · телеметрия")
+                    .font(Theme.body(12, weight: .semibold))
                     .foregroundColor(Theme.textTertiary)
             }
         }
@@ -166,29 +188,41 @@ struct RootView: View {
         Group {
             if let track = store.lastTrack {
                 Button(action: { start(track) }) {
-                    Panel(cornerRadius: 18) {
-                        HStack(spacing: 12) {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text("ПОСЛЕДНЯЯ ТРАССА")
-                                    .font(Theme.label(9))
-                                    .kerning(1)
-                                    .foregroundColor(Theme.textTertiary)
-                                Text(track.name)
-                                    .font(Theme.body(16, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .lineLimit(1)
-                                Text(quickStartSubtitle(track))
-                                    .font(Theme.body(11))
-                                    .foregroundColor(Theme.textTertiary)
-                                    .lineLimit(1)
-                            }
-                            Spacer(minLength: 8)
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundColor(Theme.accent)
+                    HStack(spacing: 12) {
+                        Rectangle()
+                            .fill(Theme.accentLemon)
+                            .frame(width: 4)
+                            .shadow(color: Theme.accentLemon, radius: 8)
+
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("ПОСЛЕДНЯЯ ТРАССА")
+                                .font(Theme.label(9))
+                                .kerning(1.4)
+                                .foregroundColor(Theme.textTertiary)
+                            Text(track.name)
+                                .font(Theme.body(16, weight: .black))
+                                .foregroundColor(.white)
+                                .lineLimit(1)
+                            Text(quickStartSubtitle(track))
+                                .font(Theme.body(11, weight: .semibold))
+                                .foregroundColor(Theme.textTertiary)
+                                .lineLimit(1)
                         }
-                        .padding(14)
+                        Spacer(minLength: 6)
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 16, weight: .black))
+                            .foregroundColor(Theme.accentLemon)
+                            .shadow(color: Theme.accentLemon, radius: 8)
                     }
+                    .padding(14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(Theme.surface.opacity(0.92))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(Theme.strokeStrong, lineWidth: 1.5)
+                    )
                 }
                 .buttonStyle(PlainButtonStyle())
             }
@@ -206,7 +240,7 @@ struct RootView: View {
     // MARK: - Menu
 
     private var menuRow: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             MenuTile(title: "ТРАССЫ",
                      value: "\(store.tracks.count)",
                      caption: "в гараже",
@@ -218,7 +252,7 @@ struct RootView: View {
                      value: "\(records.trackCount)",
                      caption: "\(records.totalLaps) кругов",
                      icon: "trophy.fill",
-                     tint: Theme.warning,
+                     tint: Theme.accentLemon,
                      action: { showRecords = true })
         }
     }
@@ -236,8 +270,7 @@ struct RootView: View {
 
         let target = SessionTarget(track: track)
         if sheetIsOpen {
-            // Даём шиту закрыться, иначе fullScreenCover не покажется.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
                 sessionTarget = target
             }
         } else {
@@ -258,35 +291,37 @@ struct MenuTile: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 8) {
                 Image(systemName: icon)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 18, weight: .black))
                     .foregroundColor(tint)
+                    .shadow(color: tint.opacity(0.9), radius: 8)
                 Spacer(minLength: 0)
-                HStack(alignment: .lastTextBaseline, spacing: 6) {
+                HStack(alignment: .lastTextBaseline, spacing: 5) {
                     Text(value)
-                        .font(Theme.number(26, weight: .black))
+                        .font(Theme.number(30, weight: .black))
                         .foregroundColor(.white)
                     Text(caption)
-                        .font(Theme.body(11))
+                        .font(Theme.body(10, weight: .semibold))
                         .foregroundColor(Theme.textTertiary)
                 }
                 Text(title)
                     .font(Theme.label(10))
-                    .kerning(1.2)
-                    .foregroundColor(Theme.textSecondary)
+                    .kerning(1.6)
+                    .foregroundColor(tint)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
+            .padding(14)
             .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(Theme.surface)
+                    .fill(Theme.surface.opacity(0.92))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(Theme.stroke, lineWidth: 1)
+                    .stroke(tint.opacity(0.45), lineWidth: 1.5)
             )
+            .shadow(color: tint.opacity(0.22), radius: 14)
         }
         .buttonStyle(PlainButtonStyle())
     }

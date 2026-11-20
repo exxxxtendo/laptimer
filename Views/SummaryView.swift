@@ -133,10 +133,7 @@ struct SummaryView: View {
 
     private var lapList: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("КРУГИ")
-                .font(Theme.label(11))
-                .kerning(1.6)
-                .foregroundColor(Theme.textTertiary)
+            NeonHeading(text: "Круги")
 
             VStack(spacing: 0) {
                 ForEach(Array(session.laps.enumerated()), id: \.element.id) { index, lap in

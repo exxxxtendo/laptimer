@@ -28,7 +28,20 @@ struct SessionView: View {
             RaceMapView(track: track, followsUser: followsUser, recenterToken: recenterToken)
                 .ignoresSafeArea()
 
-            VStack(spacing: 12) {
+            // Затемнение низа, чтобы HUD читался на любой карте.
+            VStack {
+                Spacer()
+                LinearGradient(
+                    colors: [Color.clear, Theme.background.opacity(0.85), Theme.background],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 340)
+            }
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+
+            VStack(spacing: 10) {
                 topBar
 
                 if engine.isFreeMode {
@@ -52,7 +65,7 @@ struct SessionView: View {
             engine.process(location)
         }
         .confirmationDialog(
-            "Завершить заезд?",
+            "Закончить заезд?",
             isPresented: $showStopConfirmation,
             titleVisibility: .visible
         ) {
@@ -75,37 +88,38 @@ struct SessionView: View {
         }
     }
 
-    // MARK: - Top bar
+    // MARK: - Верхняя панель
 
     private var topBar: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             MapControlButton(icon: "xmark") { showStopConfirmation = true }
 
-            Spacer(minLength: 8)
+            Spacer(minLength: 6)
 
             HStack(spacing: 7) {
                 Circle()
-                    .fill(location.hasFix ? Theme.positive : Theme.warning)
-                    .frame(width: 7, height: 7)
+                    .fill(location.hasFix ? Theme.positive : Theme.accentLemon)
+                    .frame(width: 8, height: 8)
+                    .shadow(color: (location.hasFix ? Theme.positive : Theme.accentLemon), radius: 6)
                 Text(track?.name ?? "Свободный заезд")
-                    .font(Theme.body(13, weight: .bold))
+                    .font(Theme.body(13, weight: .black))
                     .foregroundColor(.white)
                     .lineLimit(1)
             }
             .padding(.horizontal, 14)
-            .padding(.vertical, 9)
-            .background(Capsule().fill(Color.black.opacity(0.55)))
-            .overlay(Capsule().stroke(Theme.stroke, lineWidth: 1))
+            .padding(.vertical, 10)
+            .background(Capsule().fill(Theme.surface.opacity(0.92)))
+            .overlay(Capsule().stroke(Theme.strokeStrong, lineWidth: 1.5))
 
-            Spacer(minLength: 8)
+            Spacer(minLength: 6)
 
-            MapControlButton(icon: "location.fill") {
+            MapControlButton(icon: "location.fill", tint: Theme.accentCyan) {
                 recenterToken += 1
             }
         }
     }
 
-    // MARK: - Список кругов над HUD
+    // MARK: - Полоска кругов
 
     private var lapStrip: some View {
         Group {
@@ -125,7 +139,7 @@ struct SessionView: View {
         }
     }
 
-    // MARK: - Низ: HUD и кнопки
+    // MARK: - Низ
 
     private var bottomControls: some View {
         VStack(spacing: 12) {
@@ -140,20 +154,37 @@ struct SessionView: View {
                     bestLapTime: engine.bestLapTime
                 )
 
-                Button(action: { engine.toggleFreeSession() }) {
-                    Text(freeButtonTitle)
-                        .font(Theme.number(16, weight: .heavy))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 54)
-                        .background(
-                            RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
-                                .fill(freeButtonColor)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
-                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
-                        )
+                HStack(spacing: 10) {
+                    Button(action: { engine.toggleFreeSession() }) {
+                        Text(freeButtonTitle)
+                            .font(Theme.number(16, weight: .black))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(
+                                RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
+                                    .fill(freeButtonColor)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
+                                    .stroke(Color.white.opacity(0.5), lineWidth: 1.5)
+                            )
+                            .shadow(color: freeButtonColor.opacity(0.6), radius: 16)
+                    }
+
+                    if engine.state == .running {
+                        Button(action: { engine.markLap() }) {
+                            Image(systemName: "flag.checkered")
+                                .font(.system(size: 18, weight: .black))
+                                .foregroundColor(.white)
+                                .frame(width: 56, height: 56)
+                                .background(
+                                    RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
+                                        .fill(Theme.accentLemon)
+                                )
+                                .shadow(color: Theme.accentLemon.opacity(0.6), radius: 14)
+                        }
+                    }
                 }
             } else {
                 TrackHUD(
@@ -167,8 +198,26 @@ struct SessionView: View {
                     speedKph: engine.speedKph,
                     hasReference: engine.referenceBest != nil
                 )
+
+                Button(action: { showStopConfirmation = true }) {
+                    Text("ЗАКОНЧИТЬ ЗАЕЗД")
+                        .font(Theme.number(15, weight: .black))
+                        .kerning(1.2)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(
+                            RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
+                                .fill(Theme.surfaceElevated)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
+                                .stroke(Theme.strokeStrong, lineWidth: 1.5)
+                        )
+                }
             }
         }
+        .padding(.bottom, 8)
     }
 
     private var freeButtonTitle: String {
@@ -187,7 +236,7 @@ struct SessionView: View {
         case .idle, .armed:
             return Theme.accent
         case .running:
-            return Theme.warning.opacity(0.85)
+            return Theme.accentWarm
         case .paused:
             return Theme.positive
         }
@@ -234,23 +283,22 @@ struct LapChip: View {
         HStack(spacing: 6) {
             Text("\(lap.index)")
                 .font(Theme.label(10))
-                .foregroundColor(Theme.textTertiary)
-                .frame(width: 16)
+                .foregroundColor(isBest ? Theme.background : Theme.textTertiary)
+                .frame(width: 18, height: 18)
+                .background(Circle().fill(isBest ? Theme.accentLemon : Theme.surfaceElevated))
             Text(Fmt.lap(lap.time))
-                .font(Theme.number(13, weight: .bold))
-                .foregroundColor(isBest ? Theme.positive : .white)
+                .font(Theme.number(13, weight: .black))
+                .foregroundColor(isBest ? Theme.accentLemon : .white)
                 .monospacedDigit()
             if isBest {
                 Image(systemName: "crown.fill")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundColor(Theme.warning)
+                    .font(.system(size: 9, weight: .black))
+                    .foregroundColor(Theme.accentLemon)
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .background(
-            Capsule().fill(Color.black.opacity(0.55))
-        )
-        .overlay(Capsule().stroke(isBest ? Theme.positive.opacity(0.4) : Theme.stroke, lineWidth: 1))
+        .padding(.horizontal, 9)
+        .padding(.vertical, 6)
+        .background(Capsule().fill(Theme.surface.opacity(0.94)))
+        .overlay(Capsule().stroke(isBest ? Theme.accentLemon.opacity(0.8) : Theme.stroke, lineWidth: 1.5))
     }
 }

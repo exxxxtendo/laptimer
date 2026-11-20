@@ -42,15 +42,12 @@ struct RecordsListView: View {
     private var recordsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("РЕКОРДЫ")
-                    .font(Theme.label(10))
-                    .kerning(1.4)
-                    .foregroundColor(Theme.textTertiary)
+                NeonHeading(text: "Рекорды")
                 Spacer()
                 if !records.records.isEmpty {
                     Button("Очистить") { showClearConfirmation = true }
-                        .font(Theme.body(12, weight: .semibold))
-                        .foregroundColor(Theme.negative)
+                        .font(Theme.body(12, weight: .black))
+                        .foregroundColor(Theme.accentLemon)
                 }
             }
             .padding(.top, 4)
@@ -79,10 +76,7 @@ struct RecordsListView: View {
         Group {
             if !records.history.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("ПОСЛЕДНИЕ ЗАЕЗДЫ")
-                        .font(Theme.label(10))
-                        .kerning(1.4)
-                        .foregroundColor(Theme.textTertiary)
+                    NeonHeading(text: "Последние заезды")
 
                     VStack(spacing: 8) {
                         ForEach(records.history.prefix(10)) { session in

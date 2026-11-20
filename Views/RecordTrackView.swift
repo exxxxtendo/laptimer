@@ -85,7 +85,6 @@ struct RecordTrackView: View {
                 .frame(height: 56)
             }
             .buttonStyle(PrimaryButtonStyle(color: isRecording ? Theme.negative : Theme.accent))
-            .disabled(isRecording && !hasEnoughPoints && !path.isEmpty ? false : false)
         }
         .padding(.horizontal, Theme.screenPadding)
         .padding(.bottom, 20)

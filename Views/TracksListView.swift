@@ -1,4 +1,4 @@
-import SwiftUI
+﻿import SwiftUI
 
 /// Список трасс в гараже: карточки с превью, рекордами и действиями.
 struct TracksListView: View {
@@ -56,10 +56,7 @@ struct TracksListView: View {
     // MARK: - Секции
 
     private var sectionLabel: some View {
-        Text("СОХРАНЁННЫЕ ТРАССЫ")
-            .font(Theme.label(10))
-            .kerning(1.4)
-            .foregroundColor(Theme.textTertiary)
+        NeonHeading(text: "Сохранённые трассы")
             .padding(.top, 4)
     }
 
