@@ -31,8 +31,8 @@ targets:
       path: Info.plist
       properties:
         CFBundleDisplayName: GucciRacing
-        CFBundleShortVersionString: "2.2"
-        CFBundleVersion: "4"
+        CFBundleShortVersionString: "2.3"
+        CFBundleVersion: "5"
         LSRequiresIPhoneOS: true
         MinimumOSVersion: "15.0"
         UILaunchScreen: {}
@@ -46,5 +46,5 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.yourname.laptimer
         PRODUCT_NAME: LapTimer
-        MARKETING_VERSION: "2.2"
-        CURRENT_PROJECT_VERSION: "4"
+        MARKETING_VERSION: "2.3"
+        CURRENT_PROJECT_VERSION: "5"
