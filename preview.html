@@ -1,0 +1,500 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>GucciRacing — LapTimer 2.0 · GTA VI style</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:#0A0006;
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color:#fff; padding:28px 20px 40px;
+    display:flex; flex-direction:column; align-items:center;
+    min-height:100vh;
+  }
+  .title {
+    font-size:13px; letter-spacing:4px; font-weight:900;
+    color:#FFD84D; text-transform:uppercase; margin-bottom:6px;
+    text-shadow:0 0 18px rgba(255,30,122,.9);
+  }
+  .subtitle { font-size:11px; letter-spacing:2px; color:#C77FA8; margin-bottom:22px; }
+  .phones { display:flex; gap:26px; flex-wrap:wrap; justify-content:center; }
+  .phone-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .phone {
+    width:390px; height:844px; border-radius:44px; overflow:hidden;
+    position:relative; background:#12000E;
+    border:1px solid rgba(255,79,163,.35);
+    box-shadow:0 0 0 1px rgba(255,30,122,.15), 0 22px 70px rgba(255,30,122,.22);
+  }
+  .caption { font-size:10px; letter-spacing:3px; color:#C77FA8; font-weight:800; }
+  .statusbar {
+    height:44px; display:flex; align-items:center; justify-content:space-between;
+    padding:0 26px; font-size:14px; font-weight:700; color:#fff; position:relative; z-index:5;
+  }
+  .sb-icons { display:flex; gap:5px; align-items:center; }
+  .sb-icons span { display:block; background:#fff; border-radius:1px; }
+
+  /* ---- shared GTA-ish glow background ---- */
+  .glow { position:absolute; inset:0; pointer-events:none;
+    background:
+      radial-gradient(circle at 50% -8%, rgba(255,30,122,.55), transparent 58%),
+      radial-gradient(circle at 92% 106%, rgba(139,47,255,.42), transparent 55%);
+  }
+  .scan { position:absolute; inset:0; pointer-events:none; opacity:.4;
+    background:repeating-linear-gradient(to bottom, rgba(255,255,255,.035) 0 1px, transparent 1px 3px); }
+
+  /* =============== SCREEN 1 : HOME =============== */
+  .home { position:absolute; inset:0; display:flex; flex-direction:column; padding:0 18px 22px; }
+  .home-head { display:flex; justify-content:space-between; align-items:flex-start; padding-top:6px; z-index:3; }
+  .wordmark .l1 {
+    font-family:Georgia, "Times New Roman", serif; font-size:26px; font-weight:900;
+    letter-spacing:1px; text-shadow:0 0 20px rgba(255,30,122,.95);
+  }
+  .wordmark .l2 { font-size:9px; font-weight:900; letter-spacing:5.5px; color:#FFD84D; margin-top:-2px; }
+  .gps-pill {
+    display:flex; align-items:center; gap:6px; padding:8px 11px; border-radius:999px;
+    background:rgba(30,4,25,.9); border:1.5px solid rgba(255,79,163,.55);
+    font-size:9px; font-weight:900; letter-spacing:.8px; color:#FFB3D9;
+  }
+  .dot { width:7px; height:7px; border-radius:50%; }
+  .dot.green { background:#3DFF9E; box-shadow:0 0 10px #3DFF9E; }
+
+  .hero { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; z-index:3; }
+  .hero-btn { position:relative; width:270px; height:270px; display:grid; place-items:center; }
+  .ring1 { position:absolute; width:246px; height:246px; border-radius:50%; border:2px solid rgba(255,30,122,.55); }
+  .ring2 { position:absolute; width:268px; height:268px; border-radius:50%; border:1.5px solid rgba(255,216,77,.35); }
+  .ringglow { position:absolute; width:262px; height:262px; border-radius:50%;
+    background:radial-gradient(circle, rgba(255,30,122,.55), rgba(139,47,255,.2) 55%, transparent 72%); }
+  .bee {
+    width:190px; height:190px; border-radius:50%; object-fit:cover;
+    border:2.5px solid #FFD84D;
+    box-shadow:0 0 42px rgba(255,30,122,.95);
+  }
+  .hero-label { font-size:16px; font-weight:900; letter-spacing:2.4px; text-shadow:0 0 14px rgba(255,30,122,.95); }
+  .hero-sub { font-size:12px; font-weight:600; color:#C77FA8; }
+
+  .quick {
+    display:flex; align-items:center; gap:12px; padding:14px; border-radius:16px;
+    background:rgba(30,4,25,.92); border:1.5px solid rgba(255,79,163,.55); margin-bottom:10px;
+  }
+  .quick .bar { width:4px; align-self:stretch; background:#FFD84D; border-radius:2px; box-shadow:0 0 10px #FFD84D; }
+  .quick .lbl { font-size:9px; font-weight:900; letter-spacing:1.4px; color:#C77FA8; }
+  .quick .nm { font-size:16px; font-weight:900; margin:2px 0; }
+  .quick .mt { font-size:11px; font-weight:600; color:#C77FA8; }
+  .quick .bolt { margin-left:auto; font-size:16px; color:#FFD84D; text-shadow:0 0 10px #FFD84D; }
+
+  .menu { display:flex; gap:10px; }
+  .tile {
+    flex:1; padding:14px; border-radius:18px; background:rgba(30,4,25,.92);
+    border:1.5px solid rgba(255,79,163,.45); display:flex; flex-direction:column; gap:8px;
+    min-height:120px; justify-content:space-between;
+  }
+  .tile.pink { border-color:rgba(255,30,122,.55); box-shadow:0 0 22px rgba(255,30,122,.22); }
+  .tile.lemon { border-color:rgba(255,216,77,.5); box-shadow:0 0 22px rgba(255,216,77,.18); }
+  .tile .val { font-size:30px; font-weight:900; line-height:1; }
+  .tile .val small { font-size:10px; font-weight:600; color:#C77FA8; margin-left:5px; }
+  .tile .cap { font-size:10px; font-weight:900; letter-spacing:1.6px; }
+
+  /* =============== SCREEN 2 : SESSION =============== */
+  .mapbg { position:absolute; inset:0; background:#0D0A10; }
+  .mapbg .road { position:absolute; background:rgba(140,150,190,.16); }
+  .mapbg .blk { position:absolute; background:rgba(255,255,255,.022); }
+  .session { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:space-between; padding:0 18px 16px; }
+  .sess-top { display:flex; align-items:center; gap:10px; z-index:4; padding-top:2px; }
+  .circle-btn {
+    width:46px; height:46px; border-radius:50%; background:rgba(30,4,25,.92);
+    border:1.5px solid rgba(255,79,163,.55); display:grid; place-items:center;
+  }
+  .track-pill {
+    margin:0 auto; display:flex; align-items:center; gap:7px; padding:10px 14px; border-radius:999px;
+    background:rgba(30,4,25,.92); border:1.5px solid rgba(255,79,163,.55);
+    font-size:13px; font-weight:900;
+  }
+  .shade { position:absolute; left:0; right:0; bottom:0; height:360px; z-index:2;
+    background:linear-gradient(to bottom, transparent, rgba(18,0,14,.88) 45%, #12000E); }
+
+  .chips { display:flex; gap:8px; justify-content:flex-end; z-index:4; }
+  .chip { display:flex; align-items:center; gap:6px; padding:6px 9px; border-radius:999px;
+    background:rgba(30,4,25,.94); border:1.5px solid rgba(255,79,163,.35); font-size:12px; font-weight:800; }
+  .chip .idx { width:18px; height:18px; border-radius:50%; background:#2C0725; display:grid; place-items:center; font-size:10px; color:#C77FA8; }
+  .chip.best { border-color:rgba(255,216,77,.85); color:#FFD84D; }
+  .chip.best .idx { background:#FFD84D; color:#12000E; }
+
+  .sess-bottom { z-index:4; display:flex; flex-direction:column; gap:10px; }
+  .speedrow { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; }
+  .speed { font-size:76px; font-weight:900; line-height:.9; letter-spacing:-3px;
+    text-shadow:0 0 26px rgba(255,30,122,.9); font-variant-numeric:tabular-nums; }
+  .unit { font-size:11px; font-weight:900; letter-spacing:3px; color:#FFD84D; margin-top:2px; }
+  .tag {
+    padding:6px 12px; font-size:11px; font-weight:900; letter-spacing:1.4px;
+    clip-path:polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+    background:#FF1E7A; box-shadow:0 0 14px rgba(255,30,122,.8); white-space:nowrap;
+  }
+  .delta { font-size:22px; font-weight:900; margin-top:8px; text-align:right;
+    color:#3DFF9E; text-shadow:0 0 12px rgba(61,255,158,.8); font-variant-numeric:tabular-nums; }
+
+  .hudcard {
+    border-radius:20px; background:rgba(30,4,25,.94); border:1.5px solid rgba(255,79,163,.55);
+    box-shadow:0 0 24px rgba(255,30,122,.3); padding:14px 16px;
+  }
+  .hud-top { display:flex; align-items:baseline; justify-content:space-between; }
+  .hud-label { font-size:10px; font-weight:900; letter-spacing:2px; color:#C77FA8; }
+  .hud-time { font-size:46px; font-weight:900; letter-spacing:-2px; font-variant-numeric:tabular-nums; }
+  .rule { height:1.5px; background:rgba(255,79,163,.55); margin:12px 0; }
+  .metrics { display:flex; justify-content:space-between; gap:6px; }
+  .metric .k { font-size:9px; font-weight:900; letter-spacing:1px; color:#C77FA8; }
+  .metric .v { font-size:17px; font-weight:900; font-variant-numeric:tabular-nums; margin-top:2px; }
+  .metric.r { text-align:right; }
+
+  .btn-finish {
+    height:50px; border-radius:14px; background:#2C0725; border:1.5px solid rgba(255,79,163,.55);
+    display:grid; place-items:center; font-size:15px; font-weight:900; letter-spacing:1.2px;
+  }
+
+  /* =============== SCREEN 3 : TRACKS =============== */
+  .list { position:absolute; inset:0; display:flex; flex-direction:column; padding:6px 18px 22px; gap:14px; overflow:hidden; }
+  .neon-head { display:flex; align-items:center; gap:8px; }
+  .neon-head .bar { width:4px; height:14px; background:#FF1E7A; box-shadow:0 0 8px #FF1E7A; }
+  .neon-head .txt { font-size:11px; font-weight:900; letter-spacing:2.2px; color:#FFD84D; }
+  .card { border-radius:20px; overflow:hidden; background:rgba(30,4,25,.92); border:1.5px solid rgba(255,79,163,.45); }
+  .thumb { height:104px; position:relative; background:#0D0A10; }
+  .thumb .road { position:absolute; background:rgba(140,150,190,.14); }
+  .card-body { padding:12px 14px; }
+  .card-row { display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+  .card-name { font-size:16px; font-weight:900; }
+  .card-best { font-size:14px; font-weight:900; color:#3DFF9E; font-variant-numeric:tabular-nums; }
+  .card-best.none { font-size:11px; font-weight:600; color:#C77FA8; }
+  .badges { display:flex; gap:6px; margin-top:8px; }
+  .badge {
+    font-size:9px; font-weight:900; letter-spacing:.6px; padding:4px 8px; border-radius:999px;
+    color:#FFD84D; background:rgba(255,216,77,.16); border:1px solid rgba(255,216,77,.45);
+  }
+
+  /* =============== SCREEN 4 : SUMMARY =============== */
+  .dim { position:absolute; inset:0; background:rgba(0,0,0,.55); }
+  .sheet {
+    position:absolute; left:0; right:0; bottom:0; top:22%;
+    border-radius:28px 28px 0 0; background:#1E0419;
+    border-top:1.5px solid rgba(255,79,163,.6);
+    box-shadow:0 -18px 60px rgba(255,30,122,.35);
+    padding:10px 18px 22px; display:flex; flex-direction:column; gap:14px; overflow:hidden;
+  }
+  .grabber { width:38px; height:5px; border-radius:3px; background:rgba(255,179,217,.4); margin:0 auto; }
+  .sheet .k { font-size:11px; font-weight:900; letter-spacing:1.6px; color:#C77FA8; }
+  .sheet .nm { font-size:24px; font-weight:900; margin-top:3px; }
+  .sheet .dt { font-size:12px; color:#C77FA8; }
+  .bestblock {
+    border-radius:20px; background:#2C0725; border:1.5px solid rgba(255,79,163,.55);
+    padding:18px; text-align:center;
+  }
+  .bestblock .hl { font-size:10px; font-weight:900; letter-spacing:1.4px; color:#C77FA8; }
+  .bestblock .bv { font-size:52px; font-weight:900; letter-spacing:-2px; font-variant-numeric:tabular-nums; margin:6px 0; }
+  .newrec { display:inline-block; font-size:10px; font-weight:900; letter-spacing:.6px;
+    padding:5px 10px; border-radius:999px; background:rgba(255,30,122,.28); color:#fff; }
+  .stats { display:flex; justify-content:space-between; padding:14px 16px; border-radius:20px;
+    background:#2C0725; border:1.5px solid rgba(255,79,163,.45); }
+  .laprow { display:flex; align-items:center; gap:12px; padding:10px 14px; }
+  .lapidx { width:30px; height:30px; border-radius:50%; background:#12000E; display:grid; place-items:center;
+    font-size:14px; font-weight:800; color:#C77FA8; }
+  .laptime { font-size:17px; font-weight:900; font-variant-numeric:tabular-nums; }
+  .laptime.best { color:#3DFF9E; }
+  .bestsign { margin-left:auto; font-size:9px; font-weight:900; letter-spacing:1px;
+    padding:3px 8px; border-radius:999px; background:#3DFF9E; color:#12000E; }
+  .laplist { border-radius:20px; background:#2C0725; border:1.5px solid rgba(255,79,163,.45); overflow:hidden; }
+  .laprow + .laprow { border-top:1px solid rgba(255,79,163,.22); }
+  .save { height:54px; border-radius:16px; background:#FF1E7A; display:grid; place-items:center;
+    font-size:17px; font-weight:900; box-shadow:0 0 22px rgba(255,30,122,.7); border:1.5px solid rgba(255,255,255,.5); }
+</style>
+</head>
+<body>
+
+<div class="title">GucciRacing · LapTimer 2.0</div>
+<div class="subtitle">GTA VI · КИСЛОТНО-РОЗОВАЯ ПАЛИТРА</div>
+
+<div class="phones">
+
+  <!-- ============ 1. HOME ============ -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="glow"></div>
+      <div class="scan"></div>
+      <div class="statusbar"><span>9:41</span>
+        <div class="sb-icons">
+          <span style="width:17px;height:9px;border-radius:2px"></span>
+          <span style="width:14px;height:9px;border-radius:2px"></span>
+          <span style="width:24px;height:11px;border-radius:3px"></span>
+        </div>
+      </div>
+      <div class="home">
+        <div class="home-head">
+          <div class="wordmark">
+            <div class="l1">GUCCI</div>
+            <div class="l2">RACING</div>
+          </div>
+          <div class="gps-pill"><span class="dot green"></span>GPS ±5 М</div>
+        </div>
+
+        <div class="hero">
+          <div class="hero-btn">
+            <div class="ring2"></div>
+            <div class="ring1"></div>
+            <div class="ringglow"></div>
+            <img class="bee" src="../Assets.xcassets/BeeLogo.imageset/BeeLogo.png" alt="bee">
+          </div>
+          <div style="text-align:center">
+            <div class="hero-label">СВОБОДНЫЙ ЗАЕЗД</div>
+            <div class="hero-sub">секундомер · телеметрия</div>
+          </div>
+        </div>
+
+        <div class="quick">
+          <div class="bar"></div>
+          <div>
+            <div class="lbl">ПОСЛЕДНЯЯ ТРАССА</div>
+            <div class="nm">Кольцо у озера</div>
+            <div class="mt">1.24 км · рекорд 1:21.904</div>
+          </div>
+          <div class="bolt"><svg width="16" height="16" viewBox="0 0 24 24" fill="#FFD84D" style="filter:drop-shadow(0 0 6px #FFD84D)"><path d="M13 2 L4 14 h6 l-1 8 L18 10 h-6 z"/></svg></div>
+        </div>
+
+        <div class="menu">
+          <div class="tile pink">
+            <div style="font-size:18px;color:#FF1E7A;text-shadow:0 0 10px #FF1E7A">◈</div>
+            <div><div class="val">3<small>в гараже</small></div></div>
+            <div class="cap" style="color:#FF1E7A">ТРАССЫ</div>
+          </div>
+          <div class="tile lemon">
+            <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFD84D" stroke-width="2" style="filter:drop-shadow(0 0 8px #FFD84D)"><path d="M8 21h8M12 17v4M7 4h10v6a5 5 0 0 1-10 0V4z"/><path d="M7 5H4v2a4 4 0 0 0 4 4M17 5h3v2a4 4 0 0 1-4 4"/></svg></div>
+            <div><div class="val">7<small>48 кругов</small></div></div>
+            <div class="cap" style="color:#FFD84D">РЕКОРДЫ</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">ГОТОВ</div>
+  </div>
+
+  <!-- ============ 2. SESSION ============ -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="mapbg">
+        <div class="blk" style="left:10%;top:18%;width:120px;height:80px"></div>
+        <div class="blk" style="left:60%;top:10%;width:140px;height:110px"></div>
+        <div class="blk" style="left:20%;top:55%;width:150px;height:90px"></div>
+        <div class="blk" style="left:70%;top:60%;width:100px;height:120px"></div>
+        <div class="road" style="left:-10%;top:30%;width:130%;height:2px;transform:rotate(-8deg)"></div>
+        <div class="road" style="left:-10%;top:48%;width:130%;height:2px;transform:rotate(4deg)"></div>
+        <div class="road" style="left:-10%;top:70%;width:130%;height:2px;transform:rotate(-3deg)"></div>
+        <div class="road" style="left:24%;top:0;width:2px;height:100%;transform:rotate(6deg)"></div>
+        <div class="road" style="left:66%;top:0;width:2px;height:100%;transform:rotate(-5deg)"></div>
+        <svg style="position:absolute;inset:0" viewBox="0 0 390 844" preserveAspectRatio="none">
+          <path d="M120 250 C 60 300, 70 400, 150 430 C 230 460, 250 380, 300 350 C 350 320, 340 250, 270 220 C 210 195, 160 210, 120 250 Z"
+                fill="none" stroke="rgba(255,30,122,.9)" stroke-width="5" stroke-linejoin="round"
+                style="filter:drop-shadow(0 0 9px #FF1E7A)"/>
+          <circle cx="120" cy="250" r="8" fill="#fff" stroke="#FFD84D" stroke-width="3"/>
+        </svg>
+      </div>
+
+      <div class="statusbar"><span>9:41</span>
+        <div class="sb-icons">
+          <span style="width:17px;height:9px;border-radius:2px"></span>
+          <span style="width:14px;height:9px;border-radius:2px"></span>
+          <span style="width:24px;height:11px;border-radius:3px"></span>
+        </div>
+      </div>
+
+      <div class="shade"></div>
+
+      <div class="session">
+        <div class="sess-top">
+          <div class="circle-btn">✕</div>
+          <div class="track-pill"><span class="dot" style="background:#3DFF9E;box-shadow:0 0 8px #3DFF9E"></span>Кольцо у озера</div>
+          <div class="circle-btn" style="color:#4DE0FF">◎</div>
+        </div>
+
+        <div class="chips">
+          <div class="chip best"><span class="idx">2</span>1:21.904 ★</div>
+          <div class="chip"><span class="idx">1</span>1:24.117</div>
+        </div>
+
+        <div class="sess-bottom">
+          <div class="speedrow">
+            <div>
+              <div class="speed">87</div>
+              <div class="unit">КМ/Ч</div>
+            </div>
+            <div>
+              <div class="tag" style="margin-left:auto">КРУГ 3</div>
+              <div class="delta">-0.42</div>
+            </div>
+          </div>
+
+          <div class="hudcard">
+            <div class="hud-top">
+              <div class="hud-label">КРУГ</div>
+              <div class="hud-time">1:23.456</div>
+            </div>
+            <div class="rule"></div>
+            <div class="metrics">
+              <div class="metric"><div class="k">ПРОГНОЗ</div><div class="v" style="color:#FFB3D9">1:21.4</div></div>
+              <div class="metric"><div class="k">ПОСЛЕДНИЙ</div><div class="v">1:22.408</div></div>
+              <div class="metric r"><div class="k">ЛУЧШИЙ</div><div class="v" style="color:#3DFF9E">1:21.904</div></div>
+            </div>
+          </div>
+
+          <div class="btn-finish">ЗАКОНЧИТЬ ЗАЕЗД</div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">ЗАЕЗД</div>
+  </div>
+
+  <!-- ============ 3. TRACKS ============ -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="glow"></div>
+      <div class="scan"></div>
+      <div class="statusbar"><span>9:41</span>
+        <div class="sb-icons">
+          <span style="width:17px;height:9px;border-radius:2px"></span>
+          <span style="width:14px;height:9px;border-radius:2px"></span>
+          <span style="width:24px;height:11px;border-radius:3px"></span>
+        </div>
+      </div>
+      <div class="list">
+        <div class="neon-head"><div class="bar"></div><div class="txt">СОХРАНЁННЫЕ ТРАССЫ</div></div>
+
+        <div class="card">
+          <div class="thumb">
+            <div class="road" style="left:-10%;top:38%;width:130%;height:2px;transform:rotate(-6deg)"></div>
+            <div class="road" style="left:-10%;top:66%;width:130%;height:2px;transform:rotate(5deg)"></div>
+            <svg style="position:absolute;inset:0" viewBox="0 0 390 104" preserveAspectRatio="none">
+              <path d="M70 30 C 40 55, 60 85, 140 78 C 220 71, 230 45, 300 42 C 350 40, 345 22, 270 18 C 200 14, 130 12, 70 30 Z"
+                    fill="none" stroke="rgba(255,30,122,.9)" stroke-width="3.5" stroke-linejoin="round"
+                    style="filter:drop-shadow(0 0 6px #FF1E7A)"/>
+              <circle cx="70" cy="30" r="4" fill="#fff"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-row">
+              <div class="card-name">Кольцо у озера</div>
+              <div class="card-best">1:21.904</div>
+            </div>
+            <div class="badges">
+              <div class="badge">1.24 КМ</div>
+              <div class="badge">48 ТОЧЕК</div>
+              <div class="badge" style="color:#4DE0FF;background:rgba(77,224,255,.14);border-color:rgba(77,224,255,.45)">КОЛЬЦО</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="thumb">
+            <div class="road" style="left:-10%;top:45%;width:130%;height:2px;transform:rotate(-4deg)"></div>
+            <div class="road" style="left:-10%;top:72%;width:130%;height:2px;transform:rotate(3deg)"></div>
+            <svg style="position:absolute;inset:0" viewBox="0 0 390 104" preserveAspectRatio="none">
+              <path d="M50 70 C 110 60, 160 40, 220 48 C 280 56, 320 34, 350 26"
+                    fill="none" stroke="rgba(255,30,122,.9)" stroke-width="3.5" stroke-linecap="round"
+                    style="filter:drop-shadow(0 0 6px #FF1E7A)"/>
+              <circle cx="50" cy="70" r="4" fill="#fff"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-row">
+              <div class="card-name">Промзона · спринт</div>
+              <div class="card-best">1:38.220</div>
+            </div>
+            <div class="badges">
+              <div class="badge">2.05 КМ</div>
+              <div class="badge">96 ТОЧЕК</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="thumb">
+            <div class="road" style="left:-10%;top:50%;width:130%;height:2px;transform:rotate(2deg)"></div>
+            <svg style="position:absolute;inset:0" viewBox="0 0 390 104" preserveAspectRatio="none">
+              <path d="M80 74 C 140 60, 200 46, 310 32"
+                    fill="none" stroke="rgba(255,30,122,.9)" stroke-width="3.5" stroke-linecap="round"
+                    style="filter:drop-shadow(0 0 6px #FF1E7A)"/>
+              <circle cx="80" cy="74" r="4" fill="#fff"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-row">
+              <div class="card-name">Набережная</div>
+              <div class="card-best none">нет рекорда</div>
+            </div>
+            <div class="badges">
+              <div class="badge">0.86 КМ</div>
+              <div class="badge">ПО ДОРОГАМ</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">ТРАССЫ</div>
+  </div>
+
+  <!-- ============ 4. SUMMARY ============ -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="mapbg">
+        <div class="blk" style="left:10%;top:14%;width:150px;height:90px"></div>
+        <div class="blk" style="left:55%;top:8%;width:120px;height:120px"></div>
+        <div class="road" style="left:-10%;top:26%;width:130%;height:2px;transform:rotate(-8deg)"></div>
+        <div class="road" style="left:-10%;top:44%;width:130%;height:2px;transform:rotate(4deg)"></div>
+        <svg style="position:absolute;inset:0" viewBox="0 0 390 844" preserveAspectRatio="none">
+          <path d="M120 180 C 60 220, 70 300, 150 320 C 230 340, 250 280, 300 260 C 350 240, 340 190, 270 170 C 210 150, 160 160, 120 180 Z"
+                fill="none" stroke="rgba(255,30,122,.75)" stroke-width="5"/>
+        </svg>
+      </div>
+      <div class="dim"></div>
+      <div class="statusbar"><span>9:41</span>
+        <div class="sb-icons">
+          <span style="width:17px;height:9px;border-radius:2px"></span>
+          <span style="width:14px;height:9px;border-radius:2px"></span>
+          <span style="width:24px;height:11px;border-radius:3px"></span>
+        </div>
+      </div>
+
+      <div class="sheet">
+        <div class="grabber"></div>
+        <div>
+          <div class="k">ИТОГИ ЗАЕЗДА</div>
+          <div class="nm">Кольцо у озера</div>
+          <div class="dt">18 ноя, 19:40</div>
+        </div>
+
+        <div class="bestblock">
+          <div class="hl">ЛУЧШИЙ КРУГ</div>
+          <div class="bv">1:21.904</div>
+          <div class="newrec">НОВЫЙ ЛИЧНЫЙ РЕКОРД</div>
+        </div>
+
+        <div class="stats">
+          <div class="metric"><div class="k">КРУГОВ</div><div class="v">4</div></div>
+          <div class="metric" style="text-align:center"><div class="k">СРЕДНИЙ</div><div class="v">1:23.1</div></div>
+          <div class="metric r"><div class="k">СУММА</div><div class="v">5:32.4</div></div>
+        </div>
+
+        <div>
+          <div class="neon-head" style="margin-bottom:10px"><div class="bar"></div><div class="txt">КРУГИ</div></div>
+          <div class="laplist">
+            <div class="laprow"><div class="lapidx">1</div><div class="laptime">1:24.117</div></div>
+            <div class="laprow"><div class="lapidx">2</div><div class="laptime best">1:21.904</div><div class="bestsign">BEST</div></div>
+            <div class="laprow"><div class="lapidx">3</div><div class="laptime">1:23.402</div></div>
+            <div class="laprow"><div class="lapidx">4</div><div class="laptime">1:22.980</div></div>
+          </div>
+        </div>
+
+        <div class="save">СОХРАНИТЬ</div>
+      </div>
+    </div>
+    <div class="caption">ИТОГИ</div>
+  </div>
+
+</div>
+</body>
+</html>
