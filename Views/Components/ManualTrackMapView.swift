@@ -1,4 +1,4 @@
-﻿import SwiftUI
+import SwiftUI
 import MapKit
 
 /// Карта для ручной разметки трассы: тап по карте ставит старт, потом финиш.
@@ -16,6 +16,10 @@ struct ManualTrackMapView: UIViewRepresentable {
         map.mapType = .mutedStandard
         map.overrideUserInterfaceStyle = .dark
         map.isPitchEnabled = false
+
+        // Без регистрации `dequeueReusableAnnotationView(withIdentifier:for:)`
+        // падает при добавлении первой аннотации.
+        map.register(MKMarkerAnnotationView.self, forAnnotationViewWithReuseIdentifier: "manual-marker")
 
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
         tap.numberOfTapsRequired = 1

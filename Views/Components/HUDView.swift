@@ -100,81 +100,83 @@ struct TrackHUD: View {
 
     var body: some View {
         Panel {
-            VStack(spacing: 12) {
+            VStack(spacing: 8) {
                 header
 
                 timeBlock
 
                 Rectangle()
                     .fill(Theme.strokeStrong)
-                    .frame(height: 1.5)
+                    .frame(height: 1)
 
                 HStack(alignment: .top, spacing: 6) {
                     HudMetric(label: "прогноз",
                               value: predictedLapTime.map(Fmt.lap) ?? "—",
-                              tint: Theme.textSecondary)
+                              tint: Theme.textSecondary,
+                              size: 15)
                     Spacer(minLength: 2)
                     HudMetric(label: "последний",
                               value: lastLapTime.map(Fmt.lap) ?? "—",
-                              tint: .white)
+                              tint: .white,
+                              size: 15)
                     Spacer(minLength: 2)
                     HudMetric(label: "лучший",
                               value: bestLapTime.map(Fmt.lap) ?? "—",
                               tint: bestLapTime == nil ? Theme.textTertiary : Theme.positive,
-                              alignment: .trailing)
+                              alignment: .trailing,
+                              size: 15)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
         }
     }
 
     private var header: some View {
         HStack(spacing: 8) {
-            HStack(spacing: 7) {
+            HStack(spacing: 6) {
                 PulseDot(color: state == .running ? Theme.accent : Theme.accentWarm)
                 Text(statusText)
-                    .font(Theme.label(11))
+                    .font(Theme.label(10))
                     .foregroundColor(.white)
-                    .kerning(1)
+                    .kerning(0.8)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 4)
             .background(Capsule().fill(Theme.surfaceElevated))
             .overlay(Capsule().stroke(Theme.strokeStrong, lineWidth: 1))
 
             Spacer()
 
-            HStack(spacing: 6) {
+            HStack(spacing: 5) {
                 Text("Δ")
-                    .font(Theme.label(11))
+                    .font(Theme.label(10))
                     .foregroundColor(Theme.textTertiary)
                 Text(hasReference ? Fmt.delta(delta) : "—")
-                    .font(Theme.number(15, weight: .black))
+                    .font(Theme.number(13, weight: .black))
                     .foregroundColor(deltaColor)
                     .monospacedDigit()
-                    .shadow(color: deltaColor.opacity(0.7), radius: 8)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 4)
             .background(Capsule().fill(Theme.surfaceElevated))
             .overlay(Capsule().stroke(Theme.strokeStrong, lineWidth: 1))
         }
     }
 
     private var timeBlock: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: -2) {
             Text("ВРЕМЯ КРУГА")
-                .font(Theme.label(10))
-                .kerning(2)
+                .font(Theme.label(9))
+                .kerning(1.6)
                 .foregroundColor(Theme.textTertiary)
             Text(Fmt.lap(currentLapTime))
-                .font(Theme.timer(52))
+                .font(Theme.timer(38))
                 .foregroundColor(.white)
                 .lineLimit(1)
-                .minimumScaleFactor(0.45)
+                .minimumScaleFactor(0.5)
                 .monospacedDigit()
-                .shadow(color: Theme.accent.opacity(0.55), radius: 16)
+                .shadow(color: Theme.accent.opacity(0.5), radius: 12)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
@@ -209,42 +211,43 @@ struct FreeHUD: View {
 
     var body: some View {
         Panel {
-            VStack(spacing: 12) {
+            VStack(spacing: 8) {
                 header
 
                 timeBlock
 
                 Rectangle()
                     .fill(Theme.strokeStrong)
-                    .frame(height: 1.5)
+                    .frame(height: 1)
 
                 HStack(alignment: .top, spacing: 6) {
-                    HudMetric(label: "дистанция", value: Fmt.distance(distanceMeters), tint: .white)
+                    HudMetric(label: "дистанция", value: Fmt.distance(distanceMeters), tint: .white, size: 15)
                     Spacer(minLength: 2)
-                    HudMetric(label: "кругов", value: "\(lapCount)", tint: Theme.accentCyan)
+                    HudMetric(label: "кругов", value: "\(lapCount)", tint: Theme.accentCyan, size: 15)
                     Spacer(minLength: 2)
                     HudMetric(label: "лучший круг",
                               value: bestLapTime.map(Fmt.lap) ?? "—",
                               tint: Theme.positive,
-                              alignment: .trailing)
+                              alignment: .trailing,
+                              size: 15)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
         }
     }
 
     private var header: some View {
         HStack(spacing: 8) {
-            HStack(spacing: 7) {
+            HStack(spacing: 6) {
                 PulseDot(color: state == .running ? Theme.accent : Theme.textTertiary)
                 Text(statusText)
-                    .font(Theme.label(11))
+                    .font(Theme.label(10))
                     .foregroundColor(.white)
-                    .kerning(1)
+                    .kerning(0.8)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 4)
             .background(Capsule().fill(Theme.surfaceElevated))
             .overlay(Capsule().stroke(Theme.strokeStrong, lineWidth: 1))
 
@@ -252,26 +255,26 @@ struct FreeHUD: View {
 
             if lapCount > 0 {
                 Text("КРУГОВ: \(lapCount)")
-                    .font(Theme.label(10))
-                    .kerning(0.8)
+                    .font(Theme.label(9))
+                    .kerning(0.6)
                     .foregroundColor(Theme.accentCyan)
             }
         }
     }
 
     private var timeBlock: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: -2) {
             Text("ВРЕМЯ")
-                .font(Theme.label(10))
-                .kerning(2)
+                .font(Theme.label(9))
+                .kerning(1.6)
                 .foregroundColor(Theme.textTertiary)
             Text(Fmt.lap(currentLapTime))
-                .font(Theme.timer(52))
+                .font(Theme.timer(38))
                 .foregroundColor(.white)
                 .lineLimit(1)
-                .minimumScaleFactor(0.45)
+                .minimumScaleFactor(0.5)
                 .monospacedDigit()
-                .shadow(color: Theme.accent.opacity(0.55), radius: 16)
+                .shadow(color: Theme.accent.opacity(0.5), radius: 12)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
