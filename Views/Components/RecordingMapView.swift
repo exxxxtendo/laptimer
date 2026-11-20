@@ -1,4 +1,4 @@
-import SwiftUI
+﻿import SwiftUI
 import MapKit
 
 /// Карта записи трека: рисует пройденный путь «на лету».
@@ -77,7 +77,7 @@ struct RecordingMapView: UIViewRepresentable {
                 renderer.strokeColor = UIColor.black.withAlphaComponent(0.5)
                 renderer.lineWidth = 10
             } else {
-                renderer.strokeColor = UIColor.systemGreen
+                renderer.strokeColor = UIColor(Theme.positive)
                 renderer.lineWidth = 5
             }
             return renderer

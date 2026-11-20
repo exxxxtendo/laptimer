@@ -1,4 +1,4 @@
-import SwiftUI
+﻿import SwiftUI
 import MapKit
 
 /// Карта для ручной разметки трассы: тап по карте ставит старт, потом финиш.
@@ -141,7 +141,7 @@ struct ManualTrackMapView: UIViewRepresentable {
             view.annotation = annotation
             view.canShowCallout = false
             view.animatesWhenAdded = true
-            view.markerTintColor = annotation.kind == .start ? UIColor.systemGreen : UIColor(Theme.accent)
+            view.markerTintColor = annotation.kind == .start ? UIColor(Theme.positive) : UIColor(Theme.accent)
             view.glyphImage = UIImage(systemName: annotation.kind == .start ? "flag.fill" : "flag.checkered")
             view.glyphTintColor = .white
             return view

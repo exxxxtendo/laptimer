@@ -1,4 +1,4 @@
-import SwiftUI
+﻿import SwiftUI
 import MapKit
 
 /// Маркер старта/финиша на карте.
@@ -165,7 +165,7 @@ struct RaceMapView: UIViewRepresentable {
             view.annotation = annotation
             view.canShowCallout = false
             view.animatesWhenAdded = true
-            view.markerTintColor = annotation.kind == .start ? UIColor.systemGreen : UIColor(Theme.accent)
+            view.markerTintColor = annotation.kind == .start ? UIColor(Theme.positive) : UIColor(Theme.accent)
             view.glyphTintColor = .white
             view.glyphImage = UIImage(systemName: annotation.kind == .start ? "flag.fill" : "flag.checkered")
             return view
