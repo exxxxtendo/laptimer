@@ -146,7 +146,17 @@ struct ManualTrackView: View {
             isLoop: false,
             isRouted: true
         )
-        store.add(track)
+
+        // Сразу запрашиваем реальную геометрию маршрута, чтобы превью
+        // и заезд показывали одну и ту же линию.
+        RouteGeometryLoader.load(for: track) { updated in
+            if let updated = updated {
+                store.add(updated)
+            } else {
+                store.add(track)
+            }
+        }
+
         showNameSheet = false
         Haptics.success()
         dismiss()

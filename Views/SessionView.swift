@@ -147,9 +147,7 @@ struct SessionView: View {
                 FreeHUD(
                     state: engine.state,
                     currentLapTime: engine.currentLapTime,
-                    speedKph: engine.speedKph,
                     distanceMeters: engine.distanceMeters,
-                    topSpeedKph: engine.topSpeedKph,
                     lapCount: engine.lapCount,
                     bestLapTime: engine.bestLapTime
                 )
@@ -195,7 +193,6 @@ struct SessionView: View {
                     predictedLapTime: engine.predictedLapTime,
                     delta: engine.delta,
                     lapNumber: engine.lapCount,
-                    speedKph: engine.speedKph,
                     hasReference: engine.referenceBest != nil
                 )
 

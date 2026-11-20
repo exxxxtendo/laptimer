@@ -1,4 +1,4 @@
-﻿import SwiftUI
+import SwiftUI
 
 /// Список трасс в гараже: карточки с превью, рекордами и действиями.
 struct TracksListView: View {
@@ -51,9 +51,19 @@ struct TracksListView: View {
                 newName = track.name
             }
         }
+        .onAppear(perform: loadMissingGeometry)
     }
 
     // MARK: - Секции
+
+    private func loadMissingGeometry() {
+        for track in store.tracks where track.needsRouteGeometry {
+            RouteGeometryLoader.load(for: track) { updated in
+                guard let updated = updated else { return }
+                store.update(updated)
+            }
+        }
+    }
 
     private var sectionLabel: some View {
         NeonHeading(text: "Сохранённые трассы")

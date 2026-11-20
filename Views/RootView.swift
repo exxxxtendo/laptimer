@@ -20,25 +20,31 @@ struct RootView: View {
         ZStack {
             AppBackground()
 
-            VStack(spacing: 0) {
-                header
-                    .padding(.top, 8)
+            GeometryReader { geo in
+                let safeArea = geo.safeAreaInsets
+                let metrics = HomeMetrics(size: geo.size, safeArea: safeArea)
 
-                Spacer(minLength: 8)
+                VStack(spacing: 0) {
+                    header
+                        .padding(.top, max(metrics.topPadding, safeArea.top + 4))
 
-                hero
+                    Spacer(minLength: 8)
 
-                Spacer(minLength: 8)
+                    hero(diameter: metrics.heroDiameter)
 
-                if store.lastTrack != nil {
-                    quickStart
-                        .padding(.bottom, 10)
+                    Spacer(minLength: 8)
+
+                    if store.lastTrack != nil {
+                        quickStart
+                            .padding(.bottom, 10)
+                    }
+
+                    menuRow
                 }
-
-                menuRow
+                .padding(.horizontal, Theme.screenPadding)
+                .padding(.bottom, max(metrics.bottomPadding, safeArea.bottom + 8))
+                .frame(width: geo.size.width, height: geo.size.height)
             }
-            .padding(.horizontal, Theme.screenPadding)
-            .padding(.bottom, 18)
         }
         .preferredColorScheme(.dark)
         .onAppear {
@@ -123,20 +129,21 @@ struct RootView: View {
 
     // MARK: - Hero
 
-    private var hero: some View {
-        VStack(spacing: 16) {
+    /// Логотип и кольца масштабируются под доступную высоту экрана.
+    private func hero(diameter: CGFloat) -> some View {
+        VStack(spacing: 14) {
             Button(action: { start(nil) }) {
                 ZStack {
                     // Внешнее неоновое кольцо-пульс.
                     Circle()
                         .stroke(Theme.accent.opacity(0.55), lineWidth: 2)
-                        .frame(width: 246, height: 246)
+                        .frame(width: diameter * 0.92, height: diameter * 0.92)
                         .scaleEffect(heroPulse ? 1.12 : 0.88)
                         .opacity(heroPulse ? 0 : 0.9)
 
                     Circle()
                         .stroke(Theme.accentLemon.opacity(0.35), lineWidth: 1.5)
-                        .frame(width: 268, height: 268)
+                        .frame(width: diameter, height: diameter)
                         .scaleEffect(heroPulse ? 1.05 : 0.95)
 
                     // Свечение под лого.
@@ -150,16 +157,16 @@ struct RootView: View {
                                 ]),
                                 center: .center,
                                 startRadius: 10,
-                                endRadius: 140
+                                endRadius: diameter * 0.52
                             )
                         )
-                        .frame(width: 260, height: 260)
+                        .frame(width: diameter * 0.97, height: diameter * 0.97)
                         .scaleEffect(logoGlow ? 1.06 : 0.96)
 
                     Image("BeeLogo")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 190, height: 190)
+                        .frame(width: diameter * 0.71, height: diameter * 0.71)
                         .clipShape(Circle())
                         .overlay(
                             Circle().stroke(Theme.accentLemon, lineWidth: 2.5)
@@ -276,6 +283,37 @@ struct RootView: View {
         } else {
             sessionTarget = target
         }
+    }
+}
+
+// MARK: - Метрики главного экрана
+
+/// Считает размеры главного экрана под конкретную высоту устройства,
+/// чтобы на iPhone SE/8 контент не заезжал под статус-бар и не обрезался снизу.
+private struct HomeMetrics {
+    let heroDiameter: CGFloat
+    let topPadding: CGFloat
+    let bottomPadding: CGFloat
+
+    init(size: CGSize, safeArea: EdgeInsets) {
+        let usableHeight = size.height - safeArea.top - safeArea.bottom
+
+        // Высота постоянных блоков: шапка, подписи, плитки меню.
+        let headerHeight: CGFloat = 46
+        let captionHeight: CGFloat = 40
+        let menuHeight: CGFloat = 132
+        let quickStartHeight: CGFloat = 84
+        let gaps: CGFloat = 40
+
+        let reserved = headerHeight + captionHeight + menuHeight + quickStartHeight + gaps
+        let available = max(usableHeight - reserved, 140)
+
+        // Логотип занимает примерно 62% свободного места, но в разумных пределах.
+        let computed = min(available * 0.62, 268)
+        heroDiameter = max(computed, 150)
+
+        topPadding = safeArea.top > 0 ? 6 : 12
+        bottomPadding = 16
     }
 }
 
