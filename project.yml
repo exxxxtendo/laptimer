@@ -1,0 +1,50 @@
+﻿name: LapTimer
+options:
+  bundleIdPrefix: com.yourname
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+settings:
+  base:
+    SWIFT_VERSION: "5.5"
+    CODE_SIGNING_ALLOWED: "NO"
+    CODE_SIGNING_REQUIRED: "NO"
+    CODE_SIGN_IDENTITY: ""
+    ENABLE_BITCODE: "NO"
+    TARGETED_DEVICE_FAMILY: "1"
+    GENERATE_INFOPLIST_FILE: "NO"
+    IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+    SUPPORTS_MACCATALYST: "NO"
+    SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: "NO"
+targets:
+  LapTimer:
+    type: application
+    platform: iOS
+    sources:
+      - LapTimerApp.swift
+      - Models
+      - Services
+      - Views
+      - Assets.xcassets
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: GucciRacing
+        CFBundleShortVersionString: "2.1"
+        CFBundleVersion: "3"
+        LSRequiresIPhoneOS: true
+        MinimumOSVersion: "15.0"
+        UILaunchScreen: {}
+        UIRequiredDeviceCapabilities: [gps, arm64]
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIBackgroundModes: [location]
+        NSLocationWhenInUseUsageDescription: "Нужно для записи трека и подсчёта времени круга."
+        NSLocationAlwaysAndWhenInUseUsageDescription: "Нужно для подсчёта кругов при выключенном экране."
+        NSLocationAlwaysUsageDescription: "Нужно для подсчёта кругов при выключенном экране."
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.yourname.laptimer
+        PRODUCT_NAME: LapTimer
+        MARKETING_VERSION: "2.1"
+        CURRENT_PROJECT_VERSION: "3"
