@@ -13,6 +13,8 @@ struct SessionView: View {
     @State private var completedSession: SessionResult?
     @State private var showStopConfirmation = false
     @State private var recenterToken = 0
+    /// Защита от повторной записи результата (например, двойного тапа).
+    @State private var didSubmitResult = false
 
     init(track: Track?) {
         self.track = track
@@ -233,6 +235,9 @@ struct SessionView: View {
     private func finishSession() {
         engine.stop()
         location.stop()
+        // Страховка: если экран заезда закроется любым другим способом,
+        // результат всё равно попадёт в рекорды и историю.
+        persistResultIfNeeded()
     }
 
     private func stopSession() {
@@ -243,13 +248,25 @@ struct SessionView: View {
             return
         }
 
+        persistResultIfNeeded()
+        showSummary = true
+    }
+
+    /// Записывает прошедший заезд в хранилище ровно один раз.
+    private func persistResultIfNeeded() {
+        guard !didSubmitResult, engine.hasData else { return }
+        didSubmitResult = true
+
         var session = SessionResult(
             trackID: track?.id,
             trackName: track?.name ?? "Свободный заезд"
         )
         session.laps = engine.laps
-        completedSession = session
-        showSummary = true
+
+        if completedSession == nil {
+            completedSession = session
+        }
+        records.submit(session)
     }
 }
 
