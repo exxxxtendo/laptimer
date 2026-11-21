@@ -39,9 +39,9 @@ targets:
         UIRequiredDeviceCapabilities: [gps, arm64]
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIBackgroundModes: [location]
-        NSLocationWhenInUseUsageDescription: "Нужно для записи трека и подсчёта времени круга."
-        NSLocationAlwaysAndWhenInUseUsageDescription: "Нужно для подсчёта кругов при выключенном экране."
-        NSLocationAlwaysUsageDescription: "Нужно для подсчёта кругов при выключенном экране."
+        NSLocationWhenInUseUsageDescription: "РќСѓР¶РЅРѕ РґР»СЏ Р·Р°РїРёСЃРё С‚СЂРµРєР° Рё РїРѕРґСЃС‡С‘С‚Р° РІСЂРµРјРµРЅРё РєСЂСѓРіР°."
+        NSLocationAlwaysAndWhenInUseUsageDescription: "РќСѓР¶РЅРѕ РґР»СЏ РїРѕРґСЃС‡С‘С‚Р° РєСЂСѓРіРѕРІ РїСЂРё РІС‹РєР»СЋС‡РµРЅРЅРѕРј СЌРєСЂР°РЅРµ."
+        NSLocationAlwaysUsageDescription: "РќСѓР¶РЅРѕ РґР»СЏ РїРѕРґСЃС‡С‘С‚Р° РєСЂСѓРіРѕРІ РїСЂРё РІС‹РєР»СЋС‡РµРЅРЅРѕРј СЌРєСЂР°РЅРµ."
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.yourname.laptimer
