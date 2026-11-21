@@ -1,4 +1,4 @@
-п»їname: LapTimer
+name: LapTimer
 options:
   bundleIdPrefix: com.yourname
   deploymentTarget:
@@ -31,20 +31,20 @@ targets:
       path: Info.plist
       properties:
         CFBundleDisplayName: GucciRacing
-        CFBundleShortVersionString: "2.4"
-        CFBundleVersion: "6"
+        CFBundleShortVersionString: "2.5"
+        CFBundleVersion: "7"
         LSRequiresIPhoneOS: true
         MinimumOSVersion: "15.0"
         UILaunchScreen: {}
         UIRequiredDeviceCapabilities: [gps, arm64]
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIBackgroundModes: [location]
-        NSLocationWhenInUseUsageDescription: "РќСѓР¶РЅРѕ РґР»СЏ Р·Р°РїРёСЃРё С‚СЂРµРєР° Рё РїРѕРґСЃС‡С‘С‚Р° РІСЂРµРјРµРЅРё РєСЂСѓРіР°."
-        NSLocationAlwaysAndWhenInUseUsageDescription: "РќСѓР¶РЅРѕ РґР»СЏ РїРѕРґСЃС‡С‘С‚Р° РєСЂСѓРіРѕРІ РїСЂРё РІС‹РєР»СЋС‡РµРЅРЅРѕРј СЌРєСЂР°РЅРµ."
-        NSLocationAlwaysUsageDescription: "РќСѓР¶РЅРѕ РґР»СЏ РїРѕРґСЃС‡С‘С‚Р° РєСЂСѓРіРѕРІ РїСЂРё РІС‹РєР»СЋС‡РµРЅРЅРѕРј СЌРєСЂР°РЅРµ."
+        NSLocationWhenInUseUsageDescription: "Нужно для записи трека и подсчёта времени круга."
+        NSLocationAlwaysAndWhenInUseUsageDescription: "Нужно для подсчёта кругов при выключенном экране."
+        NSLocationAlwaysUsageDescription: "Нужно для подсчёта кругов при выключенном экране."
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.yourname.laptimer
         PRODUCT_NAME: LapTimer
-        MARKETING_VERSION: "2.4"
-        CURRENT_PROJECT_VERSION: "6"
+        MARKETING_VERSION: "2.5"
+        CURRENT_PROJECT_VERSION: "7"
